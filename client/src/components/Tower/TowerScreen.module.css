@@ -1,72 +1,127 @@
-.screen { animation: cardReveal .3s ease; }
+/* ══ TowerScreen ══ */
+@keyframes slideIn  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
+@keyframes cardIn   { from{opacity:0;transform:scale(.95)} to{opacity:1;transform:scale(1)} }
 
-.header { text-align: center; margin-bottom: 20px; }
-.back {
-  float: left; background: transparent; border: 1px solid rgba(255,255,255,.2);
-  border-radius: 8px; color: rgba(255,255,255,.6); font-size: 11px;
-  padding: 6px 12px; cursor: pointer; transition: all .2s;
+.screen { animation:slideIn .3s ease; }
+
+/* Header */
+.header {
+  display:flex; align-items:flex-start; gap:12px; margin-bottom:20px;
 }
-.back:hover { color: #fff; border-color: rgba(255,255,255,.5); }
-.title { font-family: 'Press Start 2P', monospace; font-size: 13px; color: #FFD600; margin-bottom: 6px; }
-.sub   { font-size: 12px; color: rgba(255,255,255,.4); }
+.back {
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.15);
+  border-radius:10px; color:rgba(255,255,255,.6); font-size:13px; font-family:'Cairo',sans-serif;
+  padding:8px 14px; cursor:pointer; transition:all .2s; white-space:nowrap; flex-shrink:0;
+}
+.back:hover { color:#fff; border-color:rgba(255,255,255,.4); }
+.titleArea { flex:1; }
+.title {
+  font-family:'Cairo',sans-serif; font-size:22px; font-weight:900; color:#FFD600;
+  text-shadow:0 0 20px rgba(255,214,0,.3); margin-bottom:4px;
+}
+.sub { font-family:'Cairo',sans-serif; font-size:13px; color:rgba(255,255,255,.4); }
 
+/* Team slots */
 .slots {
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 8px; margin-bottom: 14px;
+  display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px;
 }
 .slot {
-  background: rgba(255,255,255,.04); border-radius: 14px; padding: 10px 6px;
-  text-align: center; position: relative;
-  border: 2px solid rgba(255,255,255,.08); min-height: 100px;
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  background:rgba(255,255,255,.04); border-radius:16px; padding:10px 8px;
+  text-align:center; position:relative; border:2px solid rgba(255,255,255,.08);
+  min-height:110px; display:flex; flex-direction:column; align-items:center; gap:3px;
 }
-.empty { border-style: dashed; opacity: .5; justify-content: center; }
-.filled { border-color: rgba(255,214,0,.25); }
+.empty { border-style:dashed; justify-content:center; }
+.filled { }
 .slotNum {
-  position: absolute; top: 5px; left: 7px;
-  font-size: 8px; color: rgba(255,255,255,.3);
-  font-family: 'Press Start 2P', monospace;
+  position:absolute; top:6px; left:8px;
+  font-size:10px; color:rgba(255,255,255,.3); font-family:'Press Start 2P',monospace;
 }
-.plus { font-size: 22px; opacity: .3; }
-.emptyLabel { font-size: 8px; color: rgba(255,255,255,.2); }
-.slotName { font-family: 'Press Start 2P', monospace; font-size: 5px; color: #fff; }
-.slotHp   { font-size: 8px; color: rgba(255,255,255,.4); }
+.plus        { font-size:24px; opacity:.25; }
+.emptyLabel  { font-family:'Cairo',sans-serif; font-size:12px; color:rgba(255,255,255,.25); }
+.slotImg     { width:52px; height:52px; object-fit:contain; image-rendering:pixelated; filter:drop-shadow(0 2px 6px rgba(0,0,0,.5)); }
+.slotName    { font-family:'Cairo',sans-serif; font-size:13px; font-weight:700; color:#fff; line-height:1.2; }
+.slotTypes   { display:flex; gap:3px; justify-content:center; flex-wrap:wrap; }
+.slotHp      { font-family:'Cairo',sans-serif; font-size:11px; color:rgba(255,255,255,.5); }
+.slotGen     { font-family:'Cairo',sans-serif; font-size:10px; font-weight:700; }
 .removeBtn {
-  position: absolute; top: 5px; right: 5px;
-  width: 18px; height: 18px; border-radius: 50%;
-  background: rgba(239,83,80,.6); border: none; color: #fff;
-  font-size: 8px; cursor: pointer;
+  position:absolute; top:5px; right:5px;
+  width:20px; height:20px; border-radius:50%;
+  background:rgba(239,83,80,.5); border:none; color:#fff;
+  font-size:10px; cursor:pointer; transition:all .2s;
 }
+.removeBtn:hover { background:#EF5350; transform:scale(1.15); }
 
+/* Start button */
 .startBtn {
-  width: 100%; padding: 14px; margin-bottom: 14px;
-  background: linear-gradient(135deg, rgba(255,214,0,.2), rgba(255,107,53,.12));
-  border: 2px solid rgba(255,214,0,.4); border-radius: 14px;
-  color: #FFD600; font-family: 'Press Start 2P', monospace; font-size: 9px;
-  cursor: pointer; transition: all .25s;
+  width:100%; padding:14px; margin-bottom:14px;
+  background:linear-gradient(135deg,rgba(255,214,0,.18),rgba(255,107,53,.1));
+  border:2px solid rgba(255,214,0,.4); border-radius:14px;
+  color:#FFD600; font-family:'Cairo',sans-serif; font-size:16px; font-weight:700;
+  cursor:pointer; transition:all .25s; display:flex; align-items:center; justify-content:center; gap:8px;
 }
-.startBtn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(255,214,0,.3); }
-.startBtn:disabled { opacity: .3; cursor: not-allowed; }
+.startBtn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 24px rgba(255,214,0,.25); }
+.startBtn:disabled { opacity:.3; cursor:not-allowed; }
+.counter { font-size:14px; opacity:.7; }
 
+/* Filter row */
+.filterRow {
+  display:flex; gap:8px; margin-bottom:8px;
+}
 .search {
-  width: 100%; padding: 10px 14px; margin-bottom: 12px;
-  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
-  border-radius: 12px; color: #fff; font-size: 13px; outline: none;
+  flex:1; padding:10px 14px;
+  background:rgba(255,255,255,.05); border:1.5px solid rgba(255,255,255,.1);
+  border-radius:12px; color:#fff; font-size:14px; outline:none; font-family:'Cairo',sans-serif;
 }
-.search::placeholder { color: rgba(255,255,255,.3); }
+.search::placeholder { color:rgba(255,255,255,.3); }
+.search:focus { border-color:rgba(79,195,247,.4); }
+.genSelect {
+  padding:10px 12px;
+  background:rgba(255,255,255,.05); border:1.5px solid rgba(255,255,255,.1);
+  border-radius:12px; color:#fff; font-size:13px; outline:none; cursor:pointer;
+  font-family:'Cairo',sans-serif;
+}
+.gridInfo {
+  font-family:'Cairo',sans-serif; font-size:12px; color:rgba(255,255,255,.3);
+  text-align:center; margin-bottom:10px;
+}
 
+/* Pokemon grid */
 .grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 8px;
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(118px,1fr)); gap:8px;
 }
 .card {
-  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
-  border-radius: 12px; padding: 10px 6px; text-align: center;
-  cursor: pointer; transition: all .2s;
+  background:rgba(255,255,255,.04); border:1.5px solid rgba(255,255,255,.08);
+  border-radius:14px; padding:10px 6px 8px; text-align:center;
+  cursor:pointer; transition:all .22s; position:relative; overflow:hidden;
+  animation:cardIn .25s ease;
+}
+.card::before {
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(160deg,rgba(255,255,255,.04),transparent);
 }
 .card:hover:not(.disabled) {
-  border-color: rgba(255,255,255,.2); transform: translateY(-3px);
+  border-color:rgba(255,255,255,.2); transform:translateY(-4px);
+  box-shadow:0 8px 20px rgba(0,0,0,.4);
 }
-.card.disabled { opacity: .3; cursor: not-allowed; }
-.name  { font-family: 'Press Start 2P', monospace; font-size: 5px; color: #fff; display: block; margin: 4px 0 3px; }
-.types { display: flex; gap: 2px; justify-content: center; }
+.card.disabled { opacity:.3; cursor:not-allowed; }
+
+.genTag {
+  font-family:'Cairo',sans-serif; font-size:10px; font-weight:700;
+  padding:2px 7px; border-radius:8px; display:inline-block; margin-bottom:5px;
+}
+.cardImg {
+  width:64px; height:64px; object-fit:contain; display:block; margin:0 auto 5px;
+  image-rendering:pixelated; filter:drop-shadow(0 3px 7px rgba(0,0,0,.6)); transition:transform .25s;
+}
+.card:hover:not(.disabled) .cardImg { transform:scale(1.1) translateY(-2px); }
+.cardName {
+  font-family:'Cairo',sans-serif; font-size:12px; font-weight:700;
+  color:#fff; display:block; margin-bottom:5px; line-height:1.3;
+}
+.cardTypes { display:flex; gap:3px; justify-content:center; flex-wrap:wrap; margin-bottom:4px; }
+.cardStats {
+  display:flex; gap:5px; justify-content:center; align-items:center;
+  flex-wrap:wrap;
+}
+.hpTag  { font-family:'Cairo',sans-serif; font-size:10px; color:#EF9A9A; }
+.bstTag { font-family:'Cairo',sans-serif; font-size:10px; color:rgba(255,214,0,.7); }

@@ -108,7 +108,7 @@ export function SelectionScreen() {
       {/* Info bar */}
       <div className={styles.infoBar}>
         {selectedIds.length === 0
-          ? 'اختر 4 بوكيمون ← 1،2 يدخلان ← 3،4 احتياط'
+          ? 'اختر 4 بوكيمون للمعركة (1، 2 يدخلان، 3، 4 احتياط)'
           : `تم اختيار ${selectedIds.length}/4 بوكيمون`}
       </div>
 

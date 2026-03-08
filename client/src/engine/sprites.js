@@ -1,14 +1,12 @@
 // ══════════════════════════════════════════
-// Sprite Engine — Chibi Pokemon sprites
-// Source: Pokemon Showdown animated sprites (chibi style)
-// Fallback chain: SD animated → SD static → PokeAPI official art
+// Sprite Engine — Chibi Pokémon sprites
+// Primary: Pokémon Showdown animated GIFs (chibi style)
+// Fallback chain uses FORM_API_IDS for all mega/form IDs
 // ══════════════════════════════════════════
 import { FORM_SD_NAMES, FORM_API_IDS } from '../data/spriteData.js';
 
-// Convert name to Showdown sprite slug
 export function nameToSD(name, id) {
   if (!name) return 'missingno';
-  // Check by ID first — covers Mega/Alolan/Galarian/Hisuian forms
   if (id && FORM_SD_NAMES[id]) return FORM_SD_NAMES[id];
   return name
     .toLowerCase()
@@ -21,58 +19,42 @@ export function nameToSD(name, id) {
     .replace(/^-|-$/g, '');
 }
 
-// ── Sprite URL generators ─────────────────────────────────────────────────────
-
-// Showdown animated GIF (chibi) — primary source
 export function showdownGif(name, id) {
-  const slug = nameToSD(name, id);
-  return `https://play.pokemonshowdown.com/sprites/ani/${slug}.gif`;
+  return `https://play.pokemonshowdown.com/sprites/ani/${nameToSD(name, id)}.gif`;
 }
 
-// Showdown static chibi sprite (gen5 style)
 export function showdownStatic(name, id) {
-  const slug = nameToSD(name, id);
-  return `https://play.pokemonshowdown.com/sprites/gen5/${slug}.png`;
+  return `https://play.pokemonshowdown.com/sprites/gen5/${nameToSD(name, id)}.png`;
 }
 
-// PokeAPI official artwork (large, correct for Mega/forms via FORM_API_IDS)
+// ── IMPORTANT: always resolve form/mega IDs via FORM_API_IDS ─────────────────
+export function pokeApiFront(id) {
+  const apiId = FORM_API_IDS[id] || id;
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${apiId}.png`;
+}
+
 export function pokeApiArt(id) {
   const apiId = FORM_API_IDS[id] || id;
   return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${apiId}.png`;
 }
 
-// PokeAPI front sprite (small, always works)
-export function pokeApiFront(id) {
-  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
-}
-
-// ── Fallback chain ─────────────────────────────────────────────────────────────
-// Order: SD animated (chibi) → SD static (chibi) → PokeAPI front → official art
+// ── Fallback chain: SD animated → SD static → PokeAPI front (correct ID) → PokeAPI art
 export function getSpriteChain(id, name) {
-  const slug = nameToSD(name, id);
+  const slug  = nameToSD(name, id);
+  const apiId = FORM_API_IDS[id] || id;
   return [
     `https://play.pokemonshowdown.com/sprites/ani/${slug}.gif`,
     `https://play.pokemonshowdown.com/sprites/gen5/${slug}.png`,
-    `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`,
-    `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${FORM_API_IDS[id] || id}.png`,
+    `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${apiId}.png`,
+    `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${apiId}.png`,
   ];
 }
 
-// ── React image loader ─────────────────────────────────────────────────────────
 export function loadSpriteWithFallback(img, id, name) {
   if (!img) return;
   const chain = getSpriteChain(id, name);
   let idx = 0;
-
-  function tryNext() {
-    if (idx >= chain.length) {
-      img.style.opacity = '0.3';
-      return;
-    }
-    img.src = chain[idx++];
-  }
-
   img.onload  = () => { img.style.opacity = '1'; };
-  img.onerror = tryNext;
-  tryNext();
+  img.onerror = () => { if (idx < chain.length) img.src = chain[idx++]; };
+  img.src = chain[idx++];
 }

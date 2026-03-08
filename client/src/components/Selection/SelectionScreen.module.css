@@ -127,10 +127,9 @@
   display:grid; grid-template-columns:repeat(auto-fill,minmax(125px,1fr)); gap:10px;
 }
 .card {
-  background:rgba(255,255,255,.04); border:2px solid rgba(255,255,255,.07);
+  background:rgba(255,255,255,.07); border:2px solid rgba(255,255,255,.12);
   border-radius:18px; padding:13px 8px 10px; text-align:center; cursor:pointer;
   transition:all .28s cubic-bezier(.34,1.56,.64,1);
-  opacity:0; transform:translateY(18px);
   animation:cardReveal .4s cubic-bezier(.34,1.56,.64,1) forwards;
   position:relative; overflow:hidden;
 }
@@ -155,13 +154,14 @@
 .cardName {
   font-family:'Cairo',sans-serif;
   font-size:13px; font-weight:700;
-  color:#fff; margin-bottom:5px; display:block; line-height:1.3;
-  text-shadow:0 1px 3px rgba(0,0,0,.5);
+  color:#ffffff; margin-bottom:5px; display:block; line-height:1.3;
+  text-shadow:0 2px 5px rgba(0,0,0,.8);
+  letter-spacing:0.3px;
 }
 .cardTypes { display:flex; gap:4px; justify-content:center; flex-wrap:wrap; margin-bottom:5px; }
 .cardMeta  { display:flex; align-items:center; justify-content:center; gap:6px; }
 .classTag  { font-size:12px; line-height:1; }
-.cardHp    { font-size:9px; color:rgba(255,255,255,.4); font-weight:600; }
+.cardHp    { font-size:10px; color:rgba(255,255,255,.6); font-weight:700; font-family:'Cairo',sans-serif; }
 .abilityTag{ font-size:12px; line-height:1; }
 
 .bstTag { font-size:10px; color:rgba(255,214,0,.7); font-family:'Cairo',sans-serif; font-weight:700; }
