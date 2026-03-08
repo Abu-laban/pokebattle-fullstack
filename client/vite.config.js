@@ -3,19 +3,23 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  base: '/',
   server: {
     port: 3000,
-    open: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+    },
   },
   build: {
-    outDir:   'dist',
-    sourcemap: true,
+    outDir: 'dist',
     rollupOptions: {
       output: {
-        // Split vendor chunks for better caching
         manualChunks: {
-          vendor: ['react', 'react-dom', 'zustand', 'immer'],
-          dex:    ['./src/data/dex.js'],
+          vendor: ['react','react-dom'],
+          dex: ['./src/data/dex.js'],
         },
       },
     },

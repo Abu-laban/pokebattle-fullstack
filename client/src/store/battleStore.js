@@ -15,7 +15,7 @@ function addEntry(log, counter, text, cls) {
 
 export const useBattleStore = create((set, get) => ({
   // ── Screen ──────────────────────────────────
-  screen: 'selection',
+  screen: 'selection',  // 'selection'|'battle'|'tower-pick'|'auth'|'leaderboard'
 
   // ── Selection ───────────────────────────────
   selectedIds: [],

@@ -2,18 +2,18 @@ import { useState }      from 'react';
 import { useAuthStore }  from '../../store/authStore.js';
 import styles            from './AuthScreen.module.css';
 
-export function AuthScreen() {
+export function AuthScreen({ onClose }) {
   const [mode, setMode]       = useState('login'); // 'login' | 'register'
   const [form, setForm]       = useState({ username:'', email:'', password:'' });
   const { login, register, loading, error, clearError } = useAuthStore();
 
   const set = (k, v) => { clearError(); setForm(f => ({ ...f, [k]: v })); };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async () => { let ok = false;
     if (mode === 'login') {
-      await login(form.email, form.password);
+      ok = await login(form.email, form.password); if (ok) onClose?.();
     } else {
-      await register(form.username, form.email, form.password);
+      ok = await register(form.username, form.email, form.password); if (ok) onClose?.();
     }
   };
 
@@ -80,7 +80,12 @@ export function AuthScreen() {
         </div>
 
         <p className={styles.guestNote}>
-          يمكنك اللعب بدون حساب — لكن تقدمك لن يُحفظ
+          <button onClick={onClose} style={{
+            background:'none',border:'none',color:'rgba(255,255,255,.3)',
+            cursor:'pointer',fontSize:11,textDecoration:'underline'
+          }}>
+            🎮 العب بدون حساب
+          </button>
         </p>
       </div>
     </div>
