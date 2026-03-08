@@ -1,49 +1,34 @@
-.bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 7px 14px;
-  border-radius: 12px;
-  border: 1px solid;
-  margin-bottom: 9px;
-  font-family: 'Press Start 2P', monospace;
-  font-size: 8px;
-  animation: weatherIn .4s cubic-bezier(.34,1.56,.64,1);
-  position: relative;
-  overflow: hidden;
-}
-@keyframes weatherIn {
-  from { opacity: 0; transform: scaleY(.6); }
-  to   { opacity: 1; transform: scaleY(1);  }
-}
-.icon   { font-size: 16px; line-height: 1; }
-.name   { letter-spacing: 1px; flex: 1; }
-.turns  {
-  background: rgba(0,0,0,.3);
-  border-radius: 8px; padding: 2px 7px;
-  font-size: 7px; color: rgba(255,255,255,.6);
-  border: 1px solid rgba(255,255,255,.1);
-}
-.particles {
-  position: absolute; inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
+@keyframes weatherIn  { from{opacity:0;transform:scaleY(.7) translateY(-5px)} to{opacity:1;transform:none} }
+@keyframes rainDrop   { 0%{transform:translateY(-20px) translateX(0);opacity:0} 10%{opacity:.7} 100%{transform:translateY(120px) translateX(-20px);opacity:0} }
+@keyframes sandDrift  { 0%{transform:translateX(-10px);opacity:0} 15%{opacity:.6} 100%{transform:translateX(300px) translateY(20px);opacity:0} }
+@keyframes snowFall   { 0%{transform:translateY(-20px) rotate(0);opacity:0} 10%{opacity:.8} 100%{transform:translateY(120px) translateX(25px) rotate(360deg);opacity:0} }
+@keyframes sunRay     { from{opacity:.1;transform:scaleX(.5)} to{opacity:.6;transform:scaleX(1.5)} }
 
-/* Particle keyframes (used by JS-injected elements) */
-@keyframes rainDrop {
-  0%   { transform: translateY(-20px) translateX(0); opacity: 0; }
-  10%  { opacity: .6; }
-  100% { transform: translateY(110vh) translateX(-30px); opacity: 0; }
+.bar {
+  display:flex; align-items:center; gap:10px;
+  padding:9px 16px; border-radius:14px; border:1.5px solid;
+  position:relative; overflow:hidden;
+  animation:weatherIn .4s cubic-bezier(.34,1.56,.64,1);
+  backdrop-filter:blur(10px);
+  margin-bottom:8px;
 }
-@keyframes sandDrift {
-  0%   { transform: translateX(-50px) translateY(0); opacity: 0; }
-  15%  { opacity: .5; }
-  100% { transform: translateX(110vw) translateY(40px); opacity: 0; }
+.topPos {
+  border-radius:12px 12px 0 0;
+  margin-bottom:0;
 }
-@keyframes snowFall {
-  0%   { transform: translateY(-20px) translateX(0) rotate(0); opacity: 0; }
-  10%  { opacity: .7; }
-  100% { transform: translateY(110vh) translateX(40px) rotate(360deg); opacity: 0; }
+.particles { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+
+.icon   { font-size:22px; line-height:1; z-index:1; flex-shrink:0; }
+.info   { flex:1; display:flex; flex-direction:column; gap:2px; z-index:1; }
+.name   {
+  font-family:'Press Start 2P',monospace; font-size:9px;
+  letter-spacing:1px; line-height:1;
 }
+.effect { font-size:10px; color:rgba(255,255,255,.5); }
+.turns  {
+  display:flex; flex-direction:column; align-items:center;
+  background:rgba(0,0,0,.35); border-radius:10px; padding:4px 10px;
+  border:1px solid rgba(255,255,255,.1); z-index:1; flex-shrink:0;
+}
+.turnsNum { font-family:'Press Start 2P',monospace; font-size:12px; color:#fff; line-height:1; }
+.turnsTxt { font-size:8px; color:rgba(255,255,255,.5); }

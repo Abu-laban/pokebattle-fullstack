@@ -1,86 +1,143 @@
+/* ══ FighterCard ══ */
+@keyframes activeGlow   { 0%,100%{box-shadow:0 0 0 rgba(255,214,0,0)} 50%{box-shadow:0 0 22px rgba(255,214,0,.45)} }
+@keyframes targetPulse  { 0%,100%{box-shadow:0 0 0 3px rgba(255,214,0,0)} 50%{box-shadow:0 0 0 3px rgba(255,214,0,.9)} }
+@keyframes faintedDrop  { from{transform:translateY(0) rotate(0);opacity:1} to{transform:translateY(8px) rotate(90deg);opacity:.3} }
+@keyframes ultPulse     { 0%,100%{opacity:.8} 50%{opacity:1;filter:brightness(1.4)} }
+@keyframes activeDotBlink{ 0%,100%{opacity:.3} 50%{opacity:1} }
+@keyframes cardIn       { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+
 .card {
   display: flex; align-items: flex-start; gap: 8px;
-  background: rgba(0,0,0,.45); border-radius: 18px;
-  padding: 10px 10px 8px; flex: 1;
-  border: 1px solid rgba(255,255,255,.07);
-  backdrop-filter: blur(10px);
-  transition: all .3s; position: relative; overflow: hidden; min-width: 0;
+  background: rgba(8,14,28,.85); border-radius: 18px;
+  padding: 10px 10px 8px; flex:1;
+  border: 1.5px solid rgba(255,255,255,.07);
+  backdrop-filter: blur(14px);
+  transition: all .3s; position: relative; overflow: hidden;
+  min-width: 0; animation: cardIn .3s ease;
 }
-.player { border-left: 3px solid #4FC3F7; }
-.enemy  { flex-direction: row-reverse; border-right: 3px solid #FF6B35; }
-.empty  { justify-content: center; align-items: center; opacity: .3;
-          color: rgba(255,255,255,.4); font-size: 22px; min-height: 90px; }
-.active { box-shadow: 0 0 20px rgba(255,214,0,.3); border-color: rgba(255,214,0,.4); }
-.fainted { opacity: .35; filter: grayscale(1); }
+.card::before {
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background: linear-gradient(160deg, rgba(255,255,255,.03) 0%, transparent 60%);
+}
+.player { border-left: 3px solid rgba(79,195,247,.7); }
+.enemy  { flex-direction:row-reverse; border-right:3px solid rgba(255,107,53,.7); }
+.empty  {
+  justify-content:center; align-items:center; flex-direction:column; gap:4px;
+  opacity:.25; min-height:90px;
+}
+.emptyIcon { font-size:22px; }
+.emptyTxt  { font-size:9px; color:rgba(255,255,255,.4); }
+.active  { animation: activeGlow 1.8s ease infinite; border-color:rgba(255,214,0,.5)!important; }
+.fainted { opacity:.35; pointer-events:none; }
+.target  {
+  animation: targetPulse .8s ease infinite;
+  cursor: pointer!important;
+}
+
+/* Target ring */
+.targetRing {
+  position:absolute; inset:0; z-index:10;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(255,214,0,.1); border-radius:18px;
+  font-size:11px; color:#FFD600; font-weight:700;
+  letter-spacing:.5px;
+}
 
 /* Class badge */
 .classBadge {
-  position: absolute; top: 5px;
-  font-size: 6px; font-weight: 700; letter-spacing: .5px;
-  padding: 2px 5px; border-radius: 6px; border: 1px solid;
-  font-family: 'Press Start 2P', monospace; line-height: 1.4;
-  white-space: nowrap; pointer-events: none; z-index: 3;
+  position:absolute; top:6px;
+  font-size:6px; font-weight:700; letter-spacing:.5px;
+  padding:2px 6px; border-radius:6px; border:1px solid;
+  font-family:'Press Start 2P',monospace; line-height:1.5;
+  white-space:nowrap; z-index:3; pointer-events:none;
 }
-.player .classBadge { right: 6px; }
-.enemy  .classBadge { left: 6px; right: auto; }
+.player .classBadge { right:8px; }
+.enemy  .classBadge { left:8px; right:auto; }
 
 /* Sprite */
+.spriteWrap { position:relative; flex-shrink:0; margin-top:18px; }
 .sprite {
-  object-fit: contain; image-rendering: pixelated; flex-shrink: 0;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,.6)); transition: all .3s;
-  margin-top: 14px; /* below class badge */
+  width:72px; height:72px; object-fit:contain;
+  image-rendering:pixelated;
+  filter:drop-shadow(0 4px 10px rgba(0,0,0,.7));
+  transition:all .3s;
 }
-.sprFainted { filter: grayscale(1) brightness(.5); transform: rotate(90deg); }
+.sprFainted { animation:faintedDrop .4s ease forwards; }
+.faintOverlay {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-size:28px; color:rgba(239,83,80,.8); font-weight:900;
+}
 
 /* Info */
-.info  { flex: 1; min-width: 0; overflow: hidden; }
-.nameLine {
-  display: flex; align-items: center; gap: 5px;
-  margin-bottom: 2px; margin-top: 14px; /* below class badge */
+.info { flex:1; min-width:0; overflow:hidden; margin-top:18px; }
+
+.nameRow {
+  display:flex; align-items:center; gap:6px; margin-bottom:3px;
 }
-.name  {
-  font-family: 'Press Start 2P', monospace; font-size: 6px; color: #fff;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+.name {
+  font-family:'Press Start 2P',monospace;
+  font-size: 8px;           /* BIGGER than before (was 6px) */
+  color:#fff; line-height:1.4;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  text-shadow: 0 0 10px rgba(255,255,255,.3);
 }
 .activeDot {
-  width: 5px; height: 5px; border-radius: 50%; background: #FFD600; flex-shrink: 0;
-  animation: blink 1s ease infinite alternate;
-}
-@keyframes blink { from { opacity: .4; } to { opacity: 1; } }
-
-/* Ability line */
-.abilityLine {
-  display: flex; align-items: center; gap: 3px; margin-bottom: 4px;
-}
-.abilityIcon { font-size: 9px; line-height: 1; }
-.abilityName {
-  font-size: 7px; color: rgba(255,255,255,.4);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  width:6px; height:6px; border-radius:50%; background:#FFD600; flex-shrink:0;
+  animation:activeDotBlink 1s ease infinite;
 }
 
-/* ULT bar */
-.ultWrap  { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
-.ultLabel { font-size: 6px; color: rgba(255,255,255,.35); white-space: nowrap; }
-.ultTrack { flex: 1; height: 3px; background: rgba(255,255,255,.08); border-radius: 2px; overflow: hidden; }
+/* HP numbers */
+.hpNums {
+  display:flex; align-items:baseline; gap:2px; margin-bottom:3px;
+  font-family:'Press Start 2P',monospace;
+}
+.hpNums span:first-child { font-size:9px; }
+.hpSlash { font-size:7px; color:rgba(255,255,255,.35); }
+.hpPct   { font-size:6px; color:rgba(255,255,255,.25); margin-left:2px; }
+
+/* ULT */
+.ultRow   { display:flex; align-items:center; gap:4px; margin-top:4px; }
+.ultLabel { font-size:7px; color:rgba(255,255,255,.4); white-space:nowrap; }
+.ultTrack { flex:1; height:4px; background:rgba(255,255,255,.08); border-radius:2px; overflow:hidden; }
 .ultFill  {
-  height: 100%; border-radius: 2px;
-  background: linear-gradient(90deg, #7C4DFF, #E040FB);
-  transition: width .4s ease;
+  height:100%; border-radius:2px;
+  background:linear-gradient(90deg,#7C4DFF,#E040FB);
+  transition:width .4s ease;
 }
-.ultReady    { animation: ultPulse 1s ease infinite; }
-@keyframes ultPulse {
-  0%,100% { box-shadow: 0 0 0 rgba(224,64,251,0); }
-  50%      { box-shadow: 0 0 6px rgba(224,64,251,.8); }
-}
-.ultPct     { font-size: 6px; color: rgba(255,255,255,.35); }
-.ultReadyTxt { color: #E040FB; font-weight: 700; }
+.ultReady    { animation:ultPulse .9s ease infinite; }
+.ultVal      { font-size:7px; color:rgba(255,255,255,.35); white-space:nowrap; }
+.ultReadyTxt { color:#E040FB; font-weight:700; font-size:7px; }
 
-/* Status badges */
-.badges { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 3px; }
-.statusBadge {
-  font-size: 6px; padding: 1px 4px; border-radius: 5px;
-  font-family: 'Press Start 2P', monospace; white-space: nowrap;
+/* Ability */
+.abilityRow {
+  display:flex; align-items:center; gap:3px; margin-top:3px;
+  background:rgba(255,255,255,.04); border-radius:6px; padding:2px 5px;
 }
-.stageBadge { font-size: 6px; padding: 1px 4px; border-radius: 4px; }
-.pos { background: rgba(102,187,106,.2); color: #A5D6A7; border: 1px solid #66BB6A33; }
-.neg { background: rgba(239,83,80,.15); color: #EF9A9A; border: 1px solid #EF535033; }
+.abilityIcon { font-size:10px; line-height:1; }
+.abilityName {
+  font-size:8px; color:rgba(255,255,255,.65);   /* MORE VISIBLE */
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  font-weight:600;
+}
+
+/* Badges */
+.badges { display:flex; flex-wrap:wrap; gap:2px; margin-top:4px; }
+.statusBadge {
+  font-size:7px; padding:2px 5px; border-radius:5px;
+  font-family:'Press Start 2P',monospace; white-space:nowrap; line-height:1.4;
+}
+.stageBadge { font-size:7px; padding:2px 5px; border-radius:4px; border:1px solid; }
+.stPos { background:rgba(102,187,106,.2); color:#A5D6A7; border-color:#66BB6A44; }
+.stNeg { background:rgba(239,83,80,.15); color:#EF9A9A; border-color:#EF535044; }
+
+/* Swap button */
+.swapBtn {
+  position:absolute; bottom:7px; right:7px;
+  width:26px; height:26px; border-radius:8px;
+  background:rgba(255,214,0,.12); border:1px solid rgba(255,214,0,.3);
+  color:#FFD600; font-size:13px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:all .2s; z-index:5;
+}
+.swapBtn:hover { background:rgba(255,214,0,.25); transform:rotate(180deg); }
+.enemy .swapBtn { left:7px; right:auto; }

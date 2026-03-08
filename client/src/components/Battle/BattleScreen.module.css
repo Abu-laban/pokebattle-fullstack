@@ -1,120 +1,156 @@
-.screen { animation: cardReveal .3s ease; }
+/* ═══ BattleScreen — Complete ═══ */
+@keyframes fadeSlideUp   { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
+@keyframes enemyPulse    { 0%,100%{box-shadow:0 0 0 rgba(255,107,53,0)} 50%{box-shadow:0 0 20px rgba(255,107,53,.3)} }
+@keyframes readyGlow     { 0%,100%{box-shadow:0 0 0 rgba(255,214,0,0)} 50%{box-shadow:0 0 22px rgba(255,214,0,.45)} }
+@keyframes swapPop       { from{opacity:0;transform:scaleY(.88) translateY(-6px)} to{opacity:1;transform:none} }
+@keyframes dotBlink      { 0%,100%{opacity:.25} 50%{opacity:1} }
+@keyframes dotAlive      { 0%,100%{transform:scale(1)} 50%{transform:scale(1.3)} }
 
-/* Tower bar */
+/* ── Screen ── */
+.screen {
+  display:flex; flex-direction:column; gap:8px;
+  padding-bottom:24px; animation:fadeSlideUp .35s ease;
+}
+
+/* ── Tower bar ── */
 .towerBar {
-  display: flex; justify-content: space-between; align-items: center;
-  background: linear-gradient(135deg, rgba(255,214,0,.12), rgba(255,107,53,.08));
-  border: 1px solid rgba(255,214,0,.25); border-radius: 12px;
-  padding: 8px 16px; margin-bottom: 10px;
-  font-family: 'Press Start 2P', monospace; font-size: 8px; color: #FFD600;
+  display:flex; align-items:center; justify-content:space-between;
+  background:linear-gradient(135deg,rgba(255,214,0,.1),rgba(255,107,53,.07));
+  border:1.5px solid rgba(255,214,0,.22); border-radius:14px; padding:8px 16px;
+  font-family:'Press Start 2P',monospace; font-size:8px; color:#FFD600;
 }
-.streak { color: rgba(255,255,255,.6); }
-.streak strong { color: #FFD600; }
+.streak { color:rgba(255,255,255,.5); }
+.streak strong { color:#FFD600; }
+.towerTeamDots { display:flex; gap:5px; align-items:center; }
+.teamDot { width:11px; height:11px; border-radius:50%; transition:all .3s; }
+.dotAlive  { background:#66BB6A; box-shadow:0 0 7px rgba(102,187,106,.7); animation:dotAlive 2s ease infinite; }
+.dotFainted{ background:rgba(255,255,255,.15); }
 
-/* Arena */
+/* ── Arena ── */
 .arena {
-  border-radius: 24px; overflow: hidden; position: relative;
-  background: linear-gradient(180deg, #0d1f3c 0%, #071428 100%);
-  border: 1px solid rgba(255,255,255,.08);
-  margin-bottom: 10px; box-shadow: 0 8px 40px rgba(0,0,0,.6);
-  transition: box-shadow .5s ease;
+  border-radius:22px; overflow:hidden; position:relative;
+  background:linear-gradient(180deg,#0c1c38 0%,#060f20 100%);
+  border:1.5px solid rgba(255,255,255,.07);
+  box-shadow:0 10px 45px rgba(0,0,0,.65);
+  transition:box-shadow .5s;
 }
+/* Weather modifies arena background */
+:global(body.weather-sun)  .arena { background:linear-gradient(180deg,#1a1200,#0d1a00); box-shadow:0 0 40px rgba(255,214,0,.1); }
+:global(body.weather-rain) .arena { background:linear-gradient(180deg,#041224,#020a18); box-shadow:0 0 40px rgba(79,195,247,.1); }
+:global(body.weather-sand) .arena { background:linear-gradient(180deg,#1a0e00,#120900); box-shadow:0 0 40px rgba(255,183,77,.1); }
+:global(body.weather-hail) .arena { background:linear-gradient(180deg,#001520,#000d15); box-shadow:0 0 40px rgba(128,222,234,.1); }
+
 .arenaGlow {
-  position: absolute; inset: 0; pointer-events: none;
+  position:absolute; inset:0; pointer-events:none;
   background:
-    radial-gradient(ellipse at 25% 60%, rgba(255,107,53,.1), transparent 50%),
-    radial-gradient(ellipse at 75% 40%, rgba(79,195,247,.1), transparent 50%);
+    radial-gradient(ellipse at 22% 70%, rgba(255,107,53,.12), transparent 50%),
+    radial-gradient(ellipse at 78% 30%, rgba(79,195,247,.10), transparent 50%);
 }
 .fighters {
-  position: relative; z-index: 2; padding: 18px;
-  display: flex; justify-content: space-between; align-items: stretch; gap: 12px;
+  position:relative; z-index:2; padding:14px 16px 16px;
+  display:flex; justify-content:space-between; align-items:stretch; gap:10px;
 }
-
-.side { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+.side { display:flex; flex-direction:column; gap:7px; flex:1; min-width:0; }
 .sideLabel {
-  font-family: 'Press Start 2P', monospace; font-size: 8px;
-  color: rgba(255,255,255,.4); text-align: center; margin-bottom: 2px;
+  font-family:'Press Start 2P',monospace; font-size:7px;
+  color:rgba(255,255,255,.35); text-align:center; letter-spacing:1px;
 }
-.enemyLabel { color: rgba(255,107,53,.6); }
-
+.enemyLabel { color:rgba(255,107,53,.5); }
 .vs {
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Press Start 2P', monospace; font-size: 14px;
-  color: rgba(255,255,255,.2); padding: 0 4px; flex-shrink: 0;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Press Start 2P',monospace; font-size:14px;
+  color:rgba(255,255,255,.16); padding:0 3px; flex-shrink:0;
+}
+.targetHint {
+  text-align:center; font-size:10px; color:#FFD600;
+  font-weight:700; animation:dotBlink 1s ease infinite;
 }
 
-/* Turn bar */
+/* ── Turn bar ── */
 .turnBar {
-  border-radius: 12px; padding: 10px 16px; text-align: center;
-  margin-bottom: 10px; font-family: 'Press Start 2P', monospace; font-size: 8px;
-  letter-spacing: 1px; border: 1px solid; display: flex; align-items: center;
-  justify-content: center; gap: 10px; transition: all .3s;
+  border-radius:13px; padding:10px 16px;
+  text-align:center; font-family:'Press Start 2P',monospace; font-size:8px;
+  letter-spacing:1px; border:1.5px solid; transition:all .3s;
+  display:flex; align-items:center; justify-content:center; gap:10px;
 }
-.playerTurn {
-  color: #4FC3F7; background: rgba(79,195,247,.06);
-  border-color: rgba(79,195,247,.18);
+.playerTurn { color:#4FC3F7; background:rgba(79,195,247,.05); border-color:rgba(79,195,247,.2); }
+.enemyTurn  {
+  color:#FF6B35; background:rgba(255,107,53,.05); border-color:rgba(255,107,53,.2);
+  animation:enemyPulse 1.4s ease infinite;
 }
-.enemyTurn {
-  color: #FF6B35; background: rgba(255,107,53,.06);
-  border-color: rgba(255,107,53,.18); animation: enemyPulse 1s ease infinite;
-}
-@keyframes enemyPulse {
-  0%,100% { box-shadow: 0 0 0 rgba(255,107,53,0); }
-  50%      { box-shadow: 0 0 12px rgba(255,107,53,.25); }
-}
-.dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: currentColor; opacity: .5;
-  animation: dotPulse 1.5s ease infinite alternate;
-}
-@keyframes dotPulse { from { opacity: .3; } to { opacity: .9; } }
+.dot { width:5px; height:5px; border-radius:50%; background:currentColor; animation:dotBlink 1.2s ease infinite; }
 
-/* Tower moves */
-.towerMoves {
-  background: rgba(0,0,0,.3); border-radius: 16px; padding: 14px;
-  border: 1px solid rgba(255,255,255,.07); margin-bottom: 10px;
+/* ── Swap panel ── */
+.swapPanel {
+  background:rgba(8,14,28,.95); border:1.5px solid rgba(255,214,0,.3);
+  border-radius:18px; padding:14px;
+  animation:swapPop .25s cubic-bezier(.34,1.56,.64,1);
+  backdrop-filter:blur(16px);
 }
-.movesHead {
-  font-family: 'Press Start 2P', monospace; font-size: 8px;
-  color: rgba(255,255,255,.5); text-align: center; margin-bottom: 10px;
-  letter-spacing: 2px;
+.swapHeader {
+  font-family:'Press Start 2P',monospace; font-size:8px; color:#FFD600;
+  margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;
 }
+.swapClose {
+  background:rgba(255,255,255,.08); border:none; color:rgba(255,255,255,.5);
+  width:26px; height:26px; border-radius:8px; cursor:pointer; font-size:12px;
+  transition:all .2s;
+}
+.swapClose:hover { background:rgba(239,83,80,.2); color:#EF5350; }
+.benchRow { display:flex; gap:9px; flex-wrap:wrap; }
+.noBench  { font-size:11px; color:rgba(255,255,255,.3); padding:8px 0; }
 
-/* 2v2 dual panels */
-.dualPanels {
-  display: flex; gap: 8px; margin-bottom: 10px;
+/* Bench card */
+.benchCard {
+  background:rgba(255,255,255,.05); border:1.5px solid rgba(255,255,255,.1);
+  border-radius:14px; padding:10px 12px;
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  cursor:pointer; transition:all .22s; min-width:88px; flex:1;
 }
+.benchCard:hover {
+  background:rgba(255,214,0,.08); border-color:rgba(255,214,0,.35);
+  transform:translateY(-3px); box-shadow:0 8px 22px rgba(0,0,0,.4);
+}
+.benchName    { font-family:'Press Start 2P',monospace; font-size:6px; color:#fff; text-align:center; }
+.benchHpBar   { width:100%; height:5px; background:rgba(255,255,255,.1); border-radius:3px; overflow:hidden; }
+.benchHpTxt   { font-size:9px; color:rgba(255,255,255,.4); }
+.benchUlt     { font-size:7px; color:#E040FB; font-family:'Press Start 2P',monospace; }
 
-/* End turn button */
+/* ── Tower moves section ── */
+.towerMoves { display:flex; flex-direction:column; gap:8px; }
+.movesHead  {
+  font-family:'Press Start 2P',monospace; font-size:8px;
+  color:rgba(255,255,255,.4); text-align:center; letter-spacing:2px;
+}
+.towerSwapBtn {
+  padding:10px; border-radius:12px;
+  background:rgba(255,214,0,.08); border:1.5px solid rgba(255,214,0,.22);
+  color:#FFD600; font-size:12px; cursor:pointer; transition:all .2s;
+}
+.towerSwapBtn:hover { background:rgba(255,214,0,.16); }
+
+/* ── 2v2 dual panels ── */
+.dualPanels { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+
 .endTurnBtn {
-  width: 100%; padding: 13px; border-radius: 14px;
-  font-family: 'Press Start 2P', monospace; font-size: 10px;
-  border: 2px solid rgba(255,214,0,.2);
-  background: rgba(255,214,0,.05); color: rgba(255,214,0,.3);
-  transition: all .25s; margin-bottom: 10px; cursor: not-allowed;
+  width:100%; padding:13px; border:1.5px solid rgba(255,255,255,.1);
+  border-radius:14px; background:rgba(255,255,255,.04);
+  color:rgba(255,255,255,.3); font-size:13px; cursor:not-allowed;
+  transition:all .25s; font-weight:600;
 }
 .endTurnBtn.ready {
-  border-color: rgba(255,214,0,.7); background: rgba(255,214,0,.15);
-  color: #FFD600; cursor: pointer;
-  animation: endTurnPulse 1.5s ease infinite;
+  background:linear-gradient(135deg,rgba(255,214,0,.18),rgba(255,107,53,.13));
+  border-color:rgba(255,214,0,.45); color:#FFD600; cursor:pointer;
+  animation:readyGlow 1.6s ease infinite; font-weight:700;
 }
-@keyframes endTurnPulse {
-  0%,100% { box-shadow: 0 0 0 rgba(255,214,0,0); }
-  50%      { box-shadow: 0 0 16px rgba(255,214,0,.35); }
-}
-.endTurnBtn.ready:hover { background: rgba(255,214,0,.25); transform: translateY(-2px); }
-.endTurnBtn:disabled:not(.ready) { cursor: not-allowed; }
+.endTurnBtn.ready:hover { transform:translateY(-1px); }
 
-/* Retreat */
+/* ── Retreat ── */
 .retreatBtn {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  width: 100%; padding: 10px; margin-bottom: 12px;
-  background: rgba(244,67,54,.06); border: 1px solid rgba(244,67,54,.25);
-  border-radius: 12px; font-family: 'Press Start 2P', monospace; font-size: 7px;
-  color: #EF5350; cursor: pointer; transition: all .25s; letter-spacing: 1px;
+  padding:8px 18px; border-radius:11px;
+  background:rgba(239,83,80,.07); border:1px solid rgba(239,83,80,.15);
+  color:rgba(239,83,80,.55); font-size:11px; cursor:pointer; transition:all .2s;
+  align-self:flex-start;
 }
-.retreatBtn:hover:not(:disabled) {
-  background: rgba(244,67,54,.18); border-color: #EF5350;
-  box-shadow: 0 0 12px rgba(244,67,54,.25); transform: scale(1.01);
-}
-.retreatBtn:disabled { opacity: .3; cursor: not-allowed; }
+.retreatBtn:hover:not(:disabled) { background:rgba(239,83,80,.14); color:#EF5350; }
+.retreatBtn:disabled { opacity:.3; cursor:not-allowed; }

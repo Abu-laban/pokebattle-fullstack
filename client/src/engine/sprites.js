@@ -4,27 +4,29 @@
 import { FORM_SD_NAMES, FORM_API_IDS } from '../data/spriteData.js';
 
 // ── Convert Pokémon name to Showdown sprite slug ──
-export function nameToSD(name) {
+export function nameToSD(name, id) {
   if (!name) return 'missingno';
-  const override = FORM_SD_NAMES[name];
-  if (override) return override;
+  // Check by ID first (covers megas, forms, regional variants)
+  if (id && FORM_SD_NAMES[id]) return FORM_SD_NAMES[id];
   return name
     .toLowerCase()
+    .replace(/[éè]/g, 'e')
+    .replace(/♀/g, '-f')
+    .replace(/♂/g, '-m')
     .replace(/[^a-z0-9\-]/g, '')
     .replace(/\s+/g, '-')
-    .replace(/é/g, 'e')
-    .replace(/♀/g, '-f')
-    .replace(/♂/g, '-m');
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 // ── Sprite URL generators ──
-export function showdownGif(name) {
-  const slug = nameToSD(name);
+export function showdownGif(name, id) {
+  const slug = nameToSD(name, id);
   return `https://play.pokemonshowdown.com/sprites/ani/${slug}.gif`;
 }
 
-export function showdownStatic(name) {
-  const slug = nameToSD(name);
+export function showdownStatic(name, id) {
+  const slug = nameToSD(name, id);
   return `https://play.pokemonshowdown.com/sprites/gen5/${slug}.png`;
 }
 
@@ -41,11 +43,12 @@ export function pokeApiAnimated(id) {
 // Returns an array of URLs to try in order
 export function getSpriteChain(id, name) {
   return [
-    showdownGif(name),
-    showdownStatic(name),
+    showdownGif(name, id),
+    showdownStatic(name, id),
     pokeApiAnimated(id),
     pokeApiSprite(id),
     `https://play.pokemonshowdown.com/sprites/gen5/${id}.png`,
+    `https://play.pokemonshowdown.com/sprites/gen5/0.png`,
   ];
 }
 

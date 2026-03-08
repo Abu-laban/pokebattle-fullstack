@@ -1,63 +1,52 @@
+/* MoveGrid — Tower single pokemon moves */
+@keyframes btnIn { from{opacity:0;transform:scale(.95)} to{opacity:1;transform:scale(1)} }
+
 .grid {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 8px; padding: 4px 0;
+  display:grid; grid-template-columns:1fr 1fr; gap:8px;
 }
+
 .btn {
-  position: relative; overflow: hidden;
-  padding: 12px 10px;
-  background: rgba(255,255,255,.04);
-  border: 2px solid color-mix(in srgb, var(--type-color) 30%, transparent);
-  border-radius: 14px; cursor: pointer;
-  text-align: left; transition: all .22s;
-  display: flex; flex-direction: column; gap: 4px;
+  position:relative; overflow:hidden;
+  padding:13px 11px; border-radius:14px; cursor:pointer;
+  background:rgba(255,255,255,.04);
+  border:1.5px solid color-mix(in srgb, var(--type-color) 30%, transparent);
+  display:flex; flex-direction:column; gap:5px;
+  transition:all .22s; text-align:left;
+  animation:btnIn .2s ease;
 }
 .btn::before {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--type-color) 12%, transparent), transparent);
-  pointer-events: none;
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(145deg, color-mix(in srgb, var(--type-color) 10%, transparent), transparent 65%);
 }
 .btn:hover:not(:disabled) {
-  transform: translateY(-3px) scale(1.02);
-  border-color: color-mix(in srgb, var(--type-color) 70%, transparent);
-  box-shadow: 0 6px 20px color-mix(in srgb, var(--type-color) 25%, transparent);
+  transform:translateY(-3px);
+  border-color:color-mix(in srgb, var(--type-color) 65%, transparent);
+  box-shadow:0 8px 20px color-mix(in srgb, var(--type-color) 25%, transparent);
 }
-.btn:disabled { opacity: .35; cursor: not-allowed; transform: none; }
-
-.moveName {
-  font-family: 'Press Start 2P', monospace; font-size: 7px; color: #fff;
-  line-height: 1.3;
-}
-.moveType {
-  display: inline-block; font-size: 7px; font-weight: 700;
-  padding: 1px 6px; border-radius: 20px; color: #000;
-  text-transform: uppercase; align-self: flex-start;
-}
-.movePwr { font-size: 8px; color: rgba(255,255,255,.4); }
-
-/* ULT button */
+.btn:disabled { opacity:.3; cursor:not-allowed; }
+.blocked      { opacity:.4!important; }
 .ult {
-  grid-column: 1 / -1;
-  background: linear-gradient(135deg, rgba(124,77,255,.12), rgba(224,64,251,.08));
-  border-color: rgba(124,77,255,.5);
-  border-width: 2px;
-  animation: ultPulse 2s ease infinite;
+  grid-column:1/-1;
+  background:linear-gradient(135deg,rgba(124,77,255,.12),rgba(224,64,251,.08));
+  border-color:rgba(124,77,255,.5)!important;
+  padding:14px 14px;
 }
-@keyframes ultPulse {
-  0%,100% { box-shadow: 0 0 0 rgba(124,77,255,0); }
-  50%      { box-shadow: 0 0 18px rgba(124,77,255,.35); }
-}
-.ult:hover:not(:disabled) { transform: translateY(-3px); }
-.blocked { animation: none !important; opacity: .4; }
 
 .ultTag {
-  position: absolute; top: 6px; right: 10px;
-  font-family: 'Press Start 2P', monospace; font-size: 7px;
-  color: #E040FB; letter-spacing: 1px;
+  position:absolute; top:6px; right:9px;
+  font-size:7px; color:#E040FB; font-family:'Press Start 2P',monospace;
 }
-.ultProg {
-  height: 3px; background: rgba(255,255,255,.1); border-radius: 2px; overflow: hidden;
+
+.moveName {
+  font-family:'Press Start 2P',monospace;
+  font-size:8px; color:#fff; line-height:1.5;  /* BIGGER */
+  text-shadow:0 1px 4px rgba(0,0,0,.6);
 }
-.ultProgFill {
-  height: 100%; background: linear-gradient(90deg, #7C4DFF, #E040FB);
-  transition: width .4s ease; border-radius: 2px;
+.moveType {
+  display:inline-block; font-size:7px; font-weight:700;
+  padding:2px 8px; border-radius:12px; color:#000;
+  line-height:1.5; align-self:flex-start;
 }
+.movePwr  { font-size:10px; color:rgba(255,255,255,.5); font-weight:600; }
+
+.ultProg { width:100%; height:4px; background:rgba(255,255,255,.1); border-radius:3px; overflow:hidden; margin-top:3px; }

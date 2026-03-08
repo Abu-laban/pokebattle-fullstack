@@ -155,16 +155,24 @@ export const useBattleStore = create((set, get) => ({
 
     SFX.playBattleBGM();
 
-    const pm   = BattleMember.fresh(player, { hp: s.towerTeam[idx].hp, ult: s.towerTeam[idx].ult ?? 0 }).toPlain();
+    // Tower: use ALL team members — loss only when entire team faints
+    const myT = s.towerTeam.map((t) =>
+      BattleMember.fresh(t.poke, { hp: t.hp, ult: t.ult ?? 0 }).toPlain()
+    );
+    // Pad to 4 slots if team < 4 (shouldn't happen, but safety)
+    while (myT.length < 4) myT.push(BattleMember.faintedPlaceholder(myT[0]?.poke || enemy).toPlain());
+
+    // Enemy: single opponent, 3 fainted slots
     const em   = BattleMember.fresh(enemy).toPlain();
-    // Tower is 1v1 — fill rest as fainted placeholders
-    const myT  = [pm, BattleMember.faintedPlaceholder(player).toPlain(), BattleMember.faintedPlaceholder(player).toPlain(), BattleMember.faintedPlaceholder(player).toPlain()];
-    const enT  = [em, { ...BattleMember.fresh(enemy).toPlain(),  fainted: true }, { ...BattleMember.fresh(enemy).toPlain(),  fainted: true }, { ...BattleMember.fresh(enemy).toPlain(),  fainted: true }];
+    const enT  = [em, BattleMember.faintedPlaceholder(enemy).toPlain(), BattleMember.faintedPlaceholder(enemy).toPlain(), BattleMember.faintedPlaceholder(enemy).toPlain()];
+
+    // First non-fainted player member goes to field
+    const fieldIdx = myT.findIndex(m => !m.fainted);
 
     const msg = `🏰 معركة ${s.towerStreak + 1} | ${player.name} vs ${enemy.name}!`;
     set(s2 => ({
-      towerIdx: idx, myTeam: myT, enTeam: enT,
-      pField: [0, null], eField: [0, null],
+      towerIdx: fieldIdx >= 0 ? fieldIdx : 0, myTeam: myT, enTeam: enT,
+      pField: [fieldIdx >= 0 ? fieldIdx : 0, null], eField: [0, null],
       activeAtk: 0, active: true, pTurn: true, screen: 'battle',
       weather: new Weather().toPlain(),
       overlayResult: false, overlayTowerFaint: false,

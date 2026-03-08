@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════
 // Selection Screen — Choose your team
 // ══════════════════════════════════════════
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useBattleStore }   from '../../store/battleStore.js';
 import { useProgressStore } from '../../store/progressStore.js';
 import { DEX }              from '../../data/dex.js';
@@ -24,19 +24,26 @@ const GEN_RANGES = {
 };
 
 const GEN_LABELS = {
-  all: { label: '全部', icon: '✦', sub: '全' },
-  1:   { label: 'Gen I',   icon: '🔴', sub: 'RBY' },
-  2:   { label: 'Gen II',  icon: '🥇', sub: 'GSC' },
-  3:   { label: 'Gen III', icon: '🟢', sub: 'RSE' },
-  4:   { label: 'Gen IV',  icon: '💎', sub: 'DPP' },
-  5:   { label: 'Gen V',   icon: '⚫', sub: 'BW'  },
-  6:   { label: 'Gen VI',  icon: '🔵', sub: 'XY'  },
-  7:   { label: 'Gen VII', icon: '🌺', sub: 'SM'  },
+  all: { label: 'الكل',    icon: '✦',  sub: '894 بوكيمون' },
+  1:   { label: 'كانتو',   icon: '🔴', sub: 'Gen I · R/B/Y' },
+  2:   { label: 'جوتو',    icon: '🌿', sub: 'Gen II · G/S/C' },
+  3:   { label: 'هوين',    icon: '🌊', sub: 'Gen III · R/S/E' },
+  4:   { label: 'سينّو',   icon: '💎', sub: 'Gen IV · D/P/P' },
+  5:   { label: 'يونوفا',  icon: '⚡', sub: 'Gen V · B/W' },
+  6:   { label: 'كالوس',   icon: '✨', sub: 'Gen VI · X/Y' },
+  7:   { label: 'ألولا',   icon: '🌺', sub: 'Gen VII · S/M' },
 };
 
 export function SelectionScreen() {
   const selectedIds = useBattleStore(s => s.selectedIds);
   const currentGen  = useBattleStore(s => s.currentGen);
+
+  // Apply gen-specific body background
+  useEffect(() => {
+    document.body.classList.remove('gen-1','gen-2','gen-3','gen-4','gen-5','gen-6','gen-7');
+    if (currentGen !== 'all') document.body.classList.add('gen-' + currentGen);
+    return () => document.body.classList.remove('gen-1','gen-2','gen-3','gen-4','gen-5','gen-6','gen-7');
+  }, [currentGen]);
   const togglePoke  = useBattleStore(s => s.toggleSelectPoke);
   const removePoke  = useBattleStore(s => s.removeFromTeam);
   const setGen      = useBattleStore(s => s.setGen);

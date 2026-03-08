@@ -239,20 +239,20 @@ export function useBattleEngine() {
 
   // ── TOWER WIN — ULT persists! ──────────────────────────────────────────────
   function handleTowerWin() {
-    const snap   = useBattleStore.getState();
-    const fIdx   = snap.pField[0] ?? 0;
-    const active = snap.myTeam[fIdx];  // read from committed store
-    const tIdx   = snap.towerIdx;
-    const savedHp  = active?.hp  ?? 0;
-    const savedUlt = active?.ult ?? 0; // ULT value is preserved
+    const snap = useBattleStore.getState();
 
-    useBattleStore.setState(s2 => ({
-      towerStreak: s2.towerStreak + 1,
+    // Save HP/ULT for ALL team members back to towerTeam
+    const updatedTowerTeam = snap.towerTeam.map((t, i) => {
+      const liveM = snap.myTeam.find(m => m.poke.id === t.poke.id);
+      if (!liveM) return t;
+      return { ...t, hp: liveM.hp, ult: liveM.ult ?? t.ult, fainted: liveM.fainted };
+    });
+
+    useBattleStore.setState({
+      towerStreak: snap.towerStreak + 1,
       active: false,
-      towerTeam: s2.towerTeam.map((t, i) =>
-        i === tIdx ? { ...t, hp: savedHp, ult: savedUlt } : t
-      ),
-    }));
+      towerTeam: updatedTowerTeam,
+    });
 
     const streak = useBattleStore.getState().towerStreak;
     progress.gainXP(20 + streak * 3);
@@ -262,9 +262,37 @@ export function useBattleEngine() {
   }
 
   function handleTowerLose() {
-    const streak = useBattleStore.getState().towerStreak;
-    progress.setTowerResult(streak);
-    progress.gainXP(streak * 5);
+    const snap = useBattleStore.getState();
+
+    // Sync fainted state from myTeam back to towerTeam
+    const updatedTT = snap.towerTeam.map(t => {
+      const live = snap.myTeam.find(m => m?.poke?.id === t.poke?.id);
+      if (!live) return t;
+      return { ...t, hp: live.hp, fainted: live.fainted, ult: live.ult ?? t.ult };
+    });
+
+    // Check if any team member is still alive
+    const nextIdx = updatedTT.findIndex(t => !t.fainted);
+
+    if (nextIdx !== -1) {
+      // Auto-replace fainted field pokemon with next alive member
+      const nextMember = updatedTT[nextIdx];
+      useBattleStore.setState(s => ({
+        towerTeam: updatedTT,
+        myTeam: s.myTeam.map((m, i) =>
+          i === nextIdx ? { ...m, hp: nextMember.hp, fainted: false } : m
+        ),
+        pField: [nextIdx, null],
+      }));
+      store.addLog(`♻ ${nextMember.poke?.name} يدخل المعركة!`, 'sys');
+      useBattleStore.getState().setPTurn(true);
+      return;
+    }
+
+    // All fainted — real loss
+    progress.setTowerResult(snap.towerStreak);
+    progress.gainXP(snap.towerStreak * 5);
+    useBattleStore.setState({ towerTeam: updatedTT });
     store.endTowerRun();
   }
 
