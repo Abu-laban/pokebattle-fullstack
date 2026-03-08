@@ -9,7 +9,6 @@ import { PokeSprite }       from '../UI/PokeSprite.jsx';
 import { TypeBadge }        from '../UI/TypeBadge.jsx';
 import styles               from './SelectionScreen.module.css';
 import { getPokeAbility }  from '../../data/abilities.js';
-import { getPokeClass }    from '../../engine/damage.js';
 import { POKE_STATS }      from '../../data/pokeStats.js';
 
 const GEN_RANGES = {
@@ -213,22 +212,22 @@ function PokeCard({ poke, selected, disabled, delay, onSelect }) {
   );
 }
 
-// ── Class + ability mini row ──────────────────────────────────────────────────
+// ── Stats meta row ───────────────────────────────────────────────────────────
 function PokeCardMeta({ poke }) {
-  const stats    = POKE_STATS[poke.id];
-  const pokeClass = stats ? getPokeClass(poke.id, stats) : null;
-  const ability   = getPokeAbility(poke.id);
+  const stats   = POKE_STATS[poke.id];
+  const ability = getPokeAbility(poke.id);
+  const bst     = stats ? Object.values(stats).reduce((a, b) => a + b, 0) + poke.hp : null;
   return (
     <div className={styles.cardMeta}>
-      {pokeClass && (
-        <span className={styles.classTag} style={{ color: pokeClass.color }}>
-          {pokeClass.icon}
+      {ability && (
+        <span className={styles.abilityTag} title={ability.name + ': ' + ability.desc}>
+          {ability.icon}
         </span>
       )}
       <span className={styles.cardHp}>HP {poke.hp}</span>
-      {ability && (
-        <span className={styles.abilityTag} title={ability.desc}>
-          {ability.icon}
+      {bst && (
+        <span className={styles.bstTag} title={'مجموع الإحصائيات: ' + bst}>
+          ⭐{bst}
         </span>
       )}
     </div>

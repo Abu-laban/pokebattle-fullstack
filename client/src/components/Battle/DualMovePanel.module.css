@@ -1,40 +1,46 @@
 @keyframes panelIn   { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
-@keyframes queuedGlow{ 0%,100%{box-shadow:0 0 0 rgba(102,187,106,0)} 50%{box-shadow:0 0 14px rgba(102,187,106,.25)} }
+@keyframes committed { 0%,100%{box-shadow:0 0 0 rgba(102,187,106,0)} 50%{box-shadow:0 0 12px rgba(102,187,106,.25)} }
 
 .panel {
-  flex:1; background:rgba(8,14,28,.8); border-radius:16px; padding:12px;
+  flex:1; background:rgba(8,14,28,.82); border-radius:16px; padding:11px;
   border:1.5px solid rgba(255,255,255,.07);
-  transition:border-color .3s; animation:panelIn .3s ease;
-  display:flex; flex-direction:column; gap:8px;
+  animation:panelIn .3s ease; display:flex; flex-direction:column; gap:7px;
 }
 .empty {
   align-items:center; justify-content:center; min-height:80px;
-  color:rgba(255,255,255,.2); font-size:11px;
+  color:rgba(255,255,255,.2); font-size:18px;
 }
-.queued {
-  border-color:rgba(102,187,106,.35)!important;
-  animation:queuedGlow 1.8s ease infinite;
-}
+.committed { border-color:rgba(102,187,106,.35)!important; animation:committed 1.8s ease infinite; }
 
 /* Header */
-.header { display:flex; align-items:center; gap:7px; }
-.slot {
-  width:22px; height:22px; border-radius:50%;
-  display:flex; align-items:center; justify-content:center;
-  font-family:'Press Start 2P',monospace; font-size:8px; flex-shrink:0;
-  font-weight:700;
+.header  { display:flex; align-items:center; gap:6px; }
+.slot    {
+  width:22px; height:22px; border-radius:50%; font-size:9px; font-weight:700;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  font-family:'Cairo',sans-serif;
 }
 .pokeName {
-  font-family:'Press Start 2P',monospace;
-  font-size:8px; color:#fff; flex:1;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  font-family:'Cairo',sans-serif; font-size:13px; font-weight:700;
+  color:#fff; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
-.readyBadge {
-  font-size:8px; color:#81C784;
-  background:rgba(102,187,106,.15); padding:2px 8px; border-radius:8px;
-  border:1px solid rgba(102,187,106,.25); white-space:nowrap;
+.readyBadge  { font-size:10px; color:#81C784; background:rgba(102,187,106,.15); padding:2px 7px; border-radius:7px; font-family:'Cairo',sans-serif; }
+.swapBadge   { font-size:10px; color:#FFD600; background:rgba(255,214,0,.12); padding:2px 7px; border-radius:7px; font-family:'Cairo',sans-serif; }
+.chooseTxt   { font-size:10px; color:rgba(255,255,255,.3); font-family:'Cairo',sans-serif; }
+
+/* Committed view */
+.committed_view { display:flex; flex-direction:column; gap:5px; }
+.committedInfo  {
+  display:flex; align-items:center; gap:8px; padding:10px 12px;
+  background:rgba(255,255,255,.04); border-radius:12px;
+  border:1px solid rgba(255,255,255,.08);
 }
-.chooseTxt { font-size:8px; color:rgba(255,255,255,.3); white-space:nowrap; }
+.committedIcon { font-size:16px; }
+.committedName { flex:1; font-family:'Cairo',sans-serif; font-size:13px; color:#81C784; font-weight:700; }
+.cancelBtn {
+  background:transparent; border:1px solid rgba(255,255,255,.2); border-radius:7px;
+  color:rgba(255,255,255,.5); font-size:10px; padding:3px 9px; cursor:pointer; transition:all .2s;
+}
+.cancelBtn:hover { border-color:#EF5350; color:#EF5350; }
 
 /* Moves grid */
 .moves { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
@@ -44,8 +50,8 @@
   padding:10px 9px; border-radius:12px; cursor:pointer;
   background:rgba(255,255,255,.03);
   border:1.5px solid color-mix(in srgb, var(--c) 25%, transparent);
-  display:flex; flex-direction:column; gap:4px;
-  transition:all .22s; text-align:left;
+  display:flex; flex-direction:column; gap:4px; text-align:left;
+  transition:all .22s;
 }
 .mv::before {
   content:''; position:absolute; inset:0; pointer-events:none;
@@ -57,45 +63,26 @@
   box-shadow:0 6px 16px color-mix(in srgb, var(--c) 20%, transparent);
 }
 .mv:disabled { opacity:.35; cursor:not-allowed; }
-.blocked     { opacity:.4!important; }
-
+.blocked     { opacity:.35!important; }
 .ultMv {
   grid-column:1/-1;
-  background:linear-gradient(135deg,rgba(124,77,255,.1),rgba(224,64,251,.06));
+  background:linear-gradient(135deg,rgba(124,77,255,.1),rgba(224,64,251,.07));
   border-color:rgba(124,77,255,.4)!important;
 }
-.ultTag {
-  position:absolute; top:5px; right:7px;
-  font-size:7px; color:#E040FB; font-family:'Press Start 2P',monospace;
-}
+.ultTag { position:absolute; top:5px; right:7px; font-size:7px; color:#E040FB; font-family:'Cairo',sans-serif; }
 
-.mvTop   { display:flex; align-items:center; justify-content:space-between; }
-.catIcon { font-size:11px; line-height:1; }
-.mvType  {
-  font-size:7px; font-weight:700; padding:1px 6px; border-radius:10px;
-  color:#000; line-height:1.5;
-}
-.mvName  {
-  font-family:'Press Start 2P',monospace;
-  font-size:7px; color:#fff; line-height:1.4;   /* CLEARER */
-}
-.mvPwr   { font-size:9px; color:rgba(255,255,255,.45); }
-.ultProg { width:100%; height:3px; background:rgba(255,255,255,.08); border-radius:3px; overflow:hidden; margin-top:2px; }
+.mvTop    { display:flex; align-items:center; justify-content:space-between; }
+.mvCatIcon{ font-size:12px; }
+.mvType   { font-size:8px; font-weight:700; padding:1px 7px; border-radius:10px; color:#000; line-height:1.6; }
+.mvName   { font-family:'Cairo',sans-serif; font-size:12px; font-weight:700; color:#fff; line-height:1.4; }
+.mvPwr    { font-size:10px; color:rgba(255,255,255,.45); font-family:'Cairo',sans-serif; }
+.ultProg  { width:100%; height:3px; background:rgba(255,255,255,.08); border-radius:3px; overflow:hidden; margin-top:2px; }
 
-/* Queued state */
-.queuedView {
-  display:flex; align-items:center; justify-content:space-between;
-  padding:10px 12px; background:rgba(102,187,106,.07);
-  border-radius:12px; border:1px solid rgba(102,187,106,.2);
+/* Swap button inside panel */
+.swapInPanel {
+  padding:8px; border-radius:11px; width:100%;
+  background:rgba(255,214,0,.06); border:1px solid rgba(255,214,0,.2);
+  color:rgba(255,214,0,.8); font-size:12px; cursor:pointer; transition:all .2s;
+  font-family:'Cairo',sans-serif;
 }
-.queuedInfo { display:flex; align-items:center; gap:8px; }
-.queuedIcon { font-size:16px; }
-.queuedName {
-  font-family:'Press Start 2P',monospace; font-size:8px; color:#81C784;
-}
-.cancelBtn {
-  background:transparent; border:1px solid rgba(255,255,255,.2);
-  border-radius:8px; color:rgba(255,255,255,.5);
-  font-size:9px; padding:4px 10px; cursor:pointer; transition:all .2s;
-}
-.cancelBtn:hover { border-color:#EF5350; color:#EF5350; }
+.swapInPanel:hover { background:rgba(255,214,0,.13); color:#FFD600; }

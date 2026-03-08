@@ -46,10 +46,10 @@
 .genTab:hover::before { opacity:1; }
 .genIcon  { font-size:20px; line-height:1; }
 .genLabel {
-  font-family:'Press Start 2P',monospace;
-  font-size:6px; color:rgba(255,255,255,.5); letter-spacing:.5px; line-height:1.4;
+  font-family:'Cairo',sans-serif;
+  font-size:13px; font-weight:700; color:rgba(255,255,255,.6); line-height:1.3;
 }
-.genSub   { font-size:9px; color:rgba(255,255,255,.3); font-weight:600; }
+.genSub   { font-size:11px; color:rgba(255,255,255,.4); font-weight:600; font-family:'Cairo',sans-serif; }
 .genTab.active { transform:translateY(-5px) scale(1.06); }
 .genTab.active .genLabel { color:#fff; }
 .genTab.active .genSub   { color:rgba(255,255,255,.65); }
@@ -153,9 +153,9 @@
 
 /* Pokemon name — BIGGER and clearer */
 .cardName {
-  font-family:'Press Start 2P',monospace;
-  font-size:7px;            /* was 6px */
-  color:#fff; margin-bottom:6px; display:block; line-height:1.5;
+  font-family:'Cairo',sans-serif;
+  font-size:13px; font-weight:700;
+  color:#fff; margin-bottom:5px; display:block; line-height:1.3;
   text-shadow:0 1px 3px rgba(0,0,0,.5);
 }
 .cardTypes { display:flex; gap:4px; justify-content:center; flex-wrap:wrap; margin-bottom:5px; }
@@ -163,3 +163,5 @@
 .classTag  { font-size:12px; line-height:1; }
 .cardHp    { font-size:9px; color:rgba(255,255,255,.4); font-weight:600; }
 .abilityTag{ font-size:12px; line-height:1; }
+
+.bstTag { font-size:10px; color:rgba(255,214,0,.7); font-family:'Cairo',sans-serif; font-weight:700; }

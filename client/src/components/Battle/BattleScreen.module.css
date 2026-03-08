@@ -1,45 +1,40 @@
-/* ═══ BattleScreen — Complete ═══ */
-@keyframes fadeSlideUp   { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
-@keyframes enemyPulse    { 0%,100%{box-shadow:0 0 0 rgba(255,107,53,0)} 50%{box-shadow:0 0 20px rgba(255,107,53,.3)} }
-@keyframes readyGlow     { 0%,100%{box-shadow:0 0 0 rgba(255,214,0,0)} 50%{box-shadow:0 0 22px rgba(255,214,0,.45)} }
-@keyframes swapPop       { from{opacity:0;transform:scaleY(.88) translateY(-6px)} to{opacity:1;transform:none} }
-@keyframes dotBlink      { 0%,100%{opacity:.25} 50%{opacity:1} }
-@keyframes dotAlive      { 0%,100%{transform:scale(1)} 50%{transform:scale(1.3)} }
+/* ══ BattleScreen ══ */
+@keyframes fadeIn     { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+@keyframes enemyPulse { 0%,100%{box-shadow:0 0 0 rgba(255,107,53,0)} 50%{box-shadow:0 0 18px rgba(255,107,53,.25)} }
+@keyframes readyGlow  { 0%,100%{box-shadow:0 0 0 rgba(255,214,0,0)} 50%{box-shadow:0 0 20px rgba(255,214,0,.4)} }
+@keyframes swapPop    { from{opacity:0;transform:scaleY(.88) translateY(-6px)} to{opacity:1;transform:none} }
+@keyframes dotBlink   { 0%,100%{opacity:.2} 50%{opacity:1} }
+@keyframes dotAlive   { 0%,100%{transform:scale(1)} 50%{transform:scale(1.3)} }
 
-/* ── Screen ── */
-.screen {
-  display:flex; flex-direction:column; gap:8px;
-  padding-bottom:24px; animation:fadeSlideUp .35s ease;
-}
+.screen { display:flex; flex-direction:column; gap:8px; padding-bottom:24px; animation:fadeIn .35s ease; }
 
-/* ── Tower bar ── */
+/* Tower bar */
 .towerBar {
   display:flex; align-items:center; justify-content:space-between;
   background:linear-gradient(135deg,rgba(255,214,0,.1),rgba(255,107,53,.07));
   border:1.5px solid rgba(255,214,0,.22); border-radius:14px; padding:8px 16px;
-  font-family:'Press Start 2P',monospace; font-size:8px; color:#FFD600;
 }
-.streak { color:rgba(255,255,255,.5); }
+.towerTitle { font-family:'Cairo',sans-serif; font-size:15px; font-weight:700; color:#FFD600; }
+.streak { font-family:'Cairo',sans-serif; font-size:13px; color:rgba(255,255,255,.55); }
 .streak strong { color:#FFD600; }
 .towerTeamDots { display:flex; gap:5px; align-items:center; }
 .teamDot { width:11px; height:11px; border-radius:50%; transition:all .3s; }
 .dotAlive  { background:#66BB6A; box-shadow:0 0 7px rgba(102,187,106,.7); animation:dotAlive 2s ease infinite; }
 .dotFainted{ background:rgba(255,255,255,.15); }
 
-/* ── Arena ── */
+/* Timer */
+.timerWrap { display:flex; align-items:center; gap:8px; }
+.timerBar  { flex:1; height:6px; background:rgba(255,255,255,.08); border-radius:4px; overflow:hidden; }
+.timerFill { height:100%; border-radius:4px; }
+.timerNum  { font-family:'Press Start 2P',monospace; font-size:11px; min-width:22px; text-align:center; }
+
+/* Arena */
 .arena {
   border-radius:22px; overflow:hidden; position:relative;
   background:linear-gradient(180deg,#0c1c38 0%,#060f20 100%);
   border:1.5px solid rgba(255,255,255,.07);
   box-shadow:0 10px 45px rgba(0,0,0,.65);
-  transition:box-shadow .5s;
 }
-/* Weather modifies arena background */
-:global(body.weather-sun)  .arena { background:linear-gradient(180deg,#1a1200,#0d1a00); box-shadow:0 0 40px rgba(255,214,0,.1); }
-:global(body.weather-rain) .arena { background:linear-gradient(180deg,#041224,#020a18); box-shadow:0 0 40px rgba(79,195,247,.1); }
-:global(body.weather-sand) .arena { background:linear-gradient(180deg,#1a0e00,#120900); box-shadow:0 0 40px rgba(255,183,77,.1); }
-:global(body.weather-hail) .arena { background:linear-gradient(180deg,#001520,#000d15); box-shadow:0 0 40px rgba(128,222,234,.1); }
-
 .arenaGlow {
   position:absolute; inset:0; pointer-events:none;
   background:
@@ -52,53 +47,50 @@
 }
 .side { display:flex; flex-direction:column; gap:7px; flex:1; min-width:0; }
 .sideLabel {
-  font-family:'Press Start 2P',monospace; font-size:7px;
-  color:rgba(255,255,255,.35); text-align:center; letter-spacing:1px;
+  font-family:'Cairo',sans-serif; font-size:12px; font-weight:700;
+  color:rgba(255,255,255,.4); text-align:center;
 }
-.enemyLabel { color:rgba(255,107,53,.5); }
+.enemyLabel { color:rgba(255,107,53,.55); }
 .vs {
   display:flex; align-items:center; justify-content:center;
   font-family:'Press Start 2P',monospace; font-size:14px;
-  color:rgba(255,255,255,.16); padding:0 3px; flex-shrink:0;
+  color:rgba(255,255,255,.15); padding:0 3px; flex-shrink:0;
 }
 .targetHint {
-  text-align:center; font-size:10px; color:#FFD600;
-  font-weight:700; animation:dotBlink 1s ease infinite;
+  text-align:center; font-family:'Cairo',sans-serif; font-size:13px;
+  font-weight:700; color:#FFD600; animation:dotBlink 1s ease infinite;
 }
 
-/* ── Turn bar ── */
+/* Turn bar */
 .turnBar {
-  border-radius:13px; padding:10px 16px;
-  text-align:center; font-family:'Press Start 2P',monospace; font-size:8px;
-  letter-spacing:1px; border:1.5px solid; transition:all .3s;
+  border-radius:13px; padding:10px 16px; text-align:center;
+  font-family:'Cairo',sans-serif; font-size:14px; font-weight:700;
+  letter-spacing:.5px; border:1.5px solid; transition:all .3s;
   display:flex; align-items:center; justify-content:center; gap:10px;
 }
-.playerTurn { color:#4FC3F7; background:rgba(79,195,247,.05); border-color:rgba(79,195,247,.2); }
-.enemyTurn  {
-  color:#FF6B35; background:rgba(255,107,53,.05); border-color:rgba(255,107,53,.2);
-  animation:enemyPulse 1.4s ease infinite;
-}
+.playerTurn { color:#4FC3F7; background:rgba(79,195,247,.05); border-color:rgba(79,195,247,.25); }
+.enemyTurn  { color:#FF6B35; background:rgba(255,107,53,.05); border-color:rgba(255,107,53,.2); animation:enemyPulse 1.4s ease infinite; }
 .dot { width:5px; height:5px; border-radius:50%; background:currentColor; animation:dotBlink 1.2s ease infinite; }
 
-/* ── Swap panel ── */
+/* Swap panel */
 .swapPanel {
-  background:rgba(8,14,28,.95); border:1.5px solid rgba(255,214,0,.3);
+  background:rgba(8,14,28,.96); border:1.5px solid rgba(255,214,0,.3);
   border-radius:18px; padding:14px;
   animation:swapPop .25s cubic-bezier(.34,1.56,.64,1);
   backdrop-filter:blur(16px);
 }
 .swapHeader {
-  font-family:'Press Start 2P',monospace; font-size:8px; color:#FFD600;
+  font-family:'Cairo',sans-serif; font-size:15px; font-weight:700; color:#FFD600;
   margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;
 }
 .swapClose {
   background:rgba(255,255,255,.08); border:none; color:rgba(255,255,255,.5);
-  width:26px; height:26px; border-radius:8px; cursor:pointer; font-size:12px;
+  width:28px; height:28px; border-radius:8px; cursor:pointer; font-size:13px;
   transition:all .2s;
 }
 .swapClose:hover { background:rgba(239,83,80,.2); color:#EF5350; }
 .benchRow { display:flex; gap:9px; flex-wrap:wrap; }
-.noBench  { font-size:11px; color:rgba(255,255,255,.3); padding:8px 0; }
+.noBench  { font-size:13px; color:rgba(255,255,255,.3); padding:8px 0; font-family:'Cairo',sans-serif; }
 
 /* Bench card */
 .benchCard {
@@ -111,46 +103,45 @@
   background:rgba(255,214,0,.08); border-color:rgba(255,214,0,.35);
   transform:translateY(-3px); box-shadow:0 8px 22px rgba(0,0,0,.4);
 }
-.benchName    { font-family:'Press Start 2P',monospace; font-size:6px; color:#fff; text-align:center; }
-.benchHpBar   { width:100%; height:5px; background:rgba(255,255,255,.1); border-radius:3px; overflow:hidden; }
-.benchHpTxt   { font-size:9px; color:rgba(255,255,255,.4); }
-.benchUlt     { font-size:7px; color:#E040FB; font-family:'Press Start 2P',monospace; }
+.benchImg   { width:52px; height:52px; object-fit:contain; image-rendering:pixelated; }
+.benchName  { font-family:'Cairo',sans-serif; font-size:12px; font-weight:700; color:#fff; text-align:center; }
+.benchHpBar { width:100%; height:5px; background:rgba(255,255,255,.1); border-radius:3px; overflow:hidden; }
+.benchHpTxt { font-size:10px; color:rgba(255,255,255,.4); font-family:'Cairo',sans-serif; }
+.benchUlt   { font-size:10px; color:#E040FB; font-family:'Cairo',sans-serif; font-weight:700; }
 
-/* ── Tower moves section ── */
+/* Tower moves */
 .towerMoves { display:flex; flex-direction:column; gap:8px; }
-.movesHead  {
-  font-family:'Press Start 2P',monospace; font-size:8px;
-  color:rgba(255,255,255,.4); text-align:center; letter-spacing:2px;
-}
+.movesHead  { font-family:'Cairo',sans-serif; font-size:14px; font-weight:700; color:rgba(255,255,255,.45); text-align:center; }
 .towerSwapBtn {
-  padding:10px; border-radius:12px;
+  padding:10px 14px; border-radius:12px; display:flex; align-items:center; justify-content:space-between;
   background:rgba(255,214,0,.08); border:1.5px solid rgba(255,214,0,.22);
-  color:#FFD600; font-size:12px; cursor:pointer; transition:all .2s;
+  color:#FFD600; font-size:13px; cursor:pointer; transition:all .2s;
+  font-family:'Cairo',sans-serif; font-weight:700;
 }
 .towerSwapBtn:hover { background:rgba(255,214,0,.16); }
+.benchCount { background:rgba(255,214,0,.2); border-radius:8px; padding:2px 8px; font-size:11px; }
 
-/* ── 2v2 dual panels ── */
+/* 2v2 */
 .dualPanels { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-
 .endTurnBtn {
   width:100%; padding:13px; border:1.5px solid rgba(255,255,255,.1);
   border-radius:14px; background:rgba(255,255,255,.04);
-  color:rgba(255,255,255,.3); font-size:13px; cursor:not-allowed;
-  transition:all .25s; font-weight:600;
+  color:rgba(255,255,255,.3); font-size:14px; cursor:not-allowed;
+  transition:all .25s; font-weight:700; font-family:'Cairo',sans-serif;
 }
 .endTurnBtn.ready {
   background:linear-gradient(135deg,rgba(255,214,0,.18),rgba(255,107,53,.13));
   border-color:rgba(255,214,0,.45); color:#FFD600; cursor:pointer;
-  animation:readyGlow 1.6s ease infinite; font-weight:700;
+  animation:readyGlow 1.6s ease infinite;
 }
 .endTurnBtn.ready:hover { transform:translateY(-1px); }
 
-/* ── Retreat ── */
+/* Retreat */
 .retreatBtn {
-  padding:8px 18px; border-radius:11px;
+  padding:8px 18px; border-radius:11px; align-self:flex-start;
   background:rgba(239,83,80,.07); border:1px solid rgba(239,83,80,.15);
-  color:rgba(239,83,80,.55); font-size:11px; cursor:pointer; transition:all .2s;
-  align-self:flex-start;
+  color:rgba(239,83,80,.55); font-size:13px; cursor:pointer; transition:all .2s;
+  font-family:'Cairo',sans-serif;
 }
 .retreatBtn:hover:not(:disabled) { background:rgba(239,83,80,.14); color:#EF5350; }
 .retreatBtn:disabled { opacity:.3; cursor:not-allowed; }

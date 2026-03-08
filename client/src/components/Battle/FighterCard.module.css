@@ -1,143 +1,119 @@
 /* ══ FighterCard ══ */
-@keyframes activeGlow   { 0%,100%{box-shadow:0 0 0 rgba(255,214,0,0)} 50%{box-shadow:0 0 22px rgba(255,214,0,.45)} }
-@keyframes targetPulse  { 0%,100%{box-shadow:0 0 0 3px rgba(255,214,0,0)} 50%{box-shadow:0 0 0 3px rgba(255,214,0,.9)} }
-@keyframes faintedDrop  { from{transform:translateY(0) rotate(0);opacity:1} to{transform:translateY(8px) rotate(90deg);opacity:.3} }
-@keyframes ultPulse     { 0%,100%{opacity:.8} 50%{opacity:1;filter:brightness(1.4)} }
-@keyframes activeDotBlink{ 0%,100%{opacity:.3} 50%{opacity:1} }
-@keyframes cardIn       { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+@keyframes activeGlow  { 0%,100%{box-shadow:0 0 0 rgba(255,214,0,0)} 50%{box-shadow:0 0 20px rgba(255,214,0,.4)} }
+@keyframes targetPulse { 0%,100%{box-shadow:0 0 0 3px rgba(255,214,0,0)} 50%{box-shadow:0 0 0 3px rgba(255,214,0,.9)} }
+@keyframes faintAnim   { to{opacity:.25; filter:grayscale(1) brightness(.5); transform:translateY(6px)} }
+@keyframes ultPulse    { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.5)} }
+@keyframes cardIn      { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+@keyframes swapBlink   { 0%,100%{border-color:rgba(255,214,0,.3)} 50%{border-color:rgba(255,214,0,.8)} }
+@keyframes dotBlink    { 0%,100%{opacity:.2} 50%{opacity:1} }
 
 .card {
-  display: flex; align-items: flex-start; gap: 8px;
-  background: rgba(8,14,28,.85); border-radius: 18px;
-  padding: 10px 10px 8px; flex:1;
-  border: 1.5px solid rgba(255,255,255,.07);
-  backdrop-filter: blur(14px);
-  transition: all .3s; position: relative; overflow: hidden;
-  min-width: 0; animation: cardIn .3s ease;
+  display:flex; align-items:flex-start; gap:7px;
+  background:rgba(8,14,28,.88); border-radius:18px;
+  padding:10px 10px 8px; flex:1;
+  border:1.5px solid rgba(255,255,255,.07);
+  backdrop-filter:blur(14px);
+  position:relative; overflow:hidden; min-width:0;
+  animation:cardIn .3s ease; transition:border-color .3s, box-shadow .3s;
 }
 .card::before {
   content:''; position:absolute; inset:0; pointer-events:none;
-  background: linear-gradient(160deg, rgba(255,255,255,.03) 0%, transparent 60%);
+  background:linear-gradient(160deg,rgba(255,255,255,.03),transparent 60%);
 }
-.player { border-left: 3px solid rgba(79,195,247,.7); }
-.enemy  { flex-direction:row-reverse; border-right:3px solid rgba(255,107,53,.7); }
-.empty  {
-  justify-content:center; align-items:center; flex-direction:column; gap:4px;
-  opacity:.25; min-height:90px;
-}
-.emptyIcon { font-size:22px; }
-.emptyTxt  { font-size:9px; color:rgba(255,255,255,.4); }
-.active  { animation: activeGlow 1.8s ease infinite; border-color:rgba(255,214,0,.5)!important; }
-.fainted { opacity:.35; pointer-events:none; }
-.target  {
-  animation: targetPulse .8s ease infinite;
-  cursor: pointer!important;
-}
+.player     { border-left:3px solid rgba(79,195,247,.7); }
+.enemy      { flex-direction:row-reverse; border-right:3px solid rgba(255,107,53,.7); }
+.empty      { justify-content:center; align-items:center; min-height:96px; opacity:.2; }
+.emptyIcon  { font-size:24px; color:rgba(255,255,255,.3); }
+.active     { animation:activeGlow 1.8s ease infinite; border-color:rgba(255,214,0,.5)!important; }
+.fainted    { opacity:.3; pointer-events:none; }
+.target     { animation:targetPulse .8s ease infinite; cursor:pointer!important; }
+.pendingSwap{ animation:swapBlink 1.2s ease infinite; }
 
-/* Target ring */
-.targetRing {
-  position:absolute; inset:0; z-index:10;
-  display:flex; align-items:center; justify-content:center;
-  background:rgba(255,214,0,.1); border-radius:18px;
-  font-size:11px; color:#FFD600; font-weight:700;
-  letter-spacing:.5px;
+/* Target overlay */
+.targetOverlay {
+  position:absolute; inset:0; z-index:10; border-radius:18px;
+  background:rgba(255,214,0,.12);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
 }
+.targetOverlay > span:first-child { font-size:28px; }
+.targetTxt { font-size:11px; color:#FFD600; font-weight:700; font-family:'Cairo',sans-serif; }
 
-/* Class badge */
-.classBadge {
-  position:absolute; top:6px;
-  font-size:6px; font-weight:700; letter-spacing:.5px;
-  padding:2px 6px; border-radius:6px; border:1px solid;
-  font-family:'Press Start 2P',monospace; line-height:1.5;
-  white-space:nowrap; z-index:3; pointer-events:none;
+/* Pending swap badge */
+.pendingSwapBadge {
+  position:absolute; bottom:6px; left:50%; transform:translateX(-50%);
+  background:rgba(255,214,0,.15); border:1px solid rgba(255,214,0,.4);
+  border-radius:8px; padding:2px 8px;
+  font-size:9px; color:#FFD600; white-space:nowrap; z-index:5;
+  font-family:'Cairo',sans-serif;
 }
-.player .classBadge { right:8px; }
-.enemy  .classBadge { left:8px; right:auto; }
 
 /* Sprite */
-.spriteWrap { position:relative; flex-shrink:0; margin-top:18px; }
+.spriteWrap { flex-shrink:0; display:flex; align-items:center; justify-content:center; }
 .sprite {
-  width:72px; height:72px; object-fit:contain;
-  image-rendering:pixelated;
-  filter:drop-shadow(0 4px 10px rgba(0,0,0,.7));
-  transition:all .3s;
+  width:76px; height:76px; object-fit:contain; image-rendering:pixelated;
+  filter:drop-shadow(0 3px 8px rgba(0,0,0,.7)); transition:all .3s;
 }
-.sprFainted { animation:faintedDrop .4s ease forwards; }
-.faintOverlay {
-  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-  font-size:28px; color:rgba(239,83,80,.8); font-weight:900;
-}
+.sprFainted { animation:faintAnim .4s ease forwards; }
 
 /* Info */
-.info { flex:1; min-width:0; overflow:hidden; margin-top:18px; }
+.info { flex:1; min-width:0; overflow:hidden; display:flex; flex-direction:column; gap:2px; }
 
-.nameRow {
-  display:flex; align-items:center; gap:6px; margin-bottom:3px;
-}
+.nameRow { display:flex; align-items:center; gap:5px; margin-bottom:1px; }
 .name {
-  font-family:'Press Start 2P',monospace;
-  font-size: 8px;           /* BIGGER than before (was 6px) */
-  color:#fff; line-height:1.4;
+  font-family:'Cairo', 'Press Start 2P', monospace;
+  font-size:12px; font-weight:700; color:#fff;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-  text-shadow: 0 0 10px rgba(255,255,255,.3);
+  text-shadow:0 1px 4px rgba(0,0,0,.5);
 }
 .activeDot {
   width:6px; height:6px; border-radius:50%; background:#FFD600; flex-shrink:0;
-  animation:activeDotBlink 1s ease infinite;
+  animation:dotBlink 1s ease infinite;
 }
 
-/* HP numbers */
-.hpNums {
-  display:flex; align-items:baseline; gap:2px; margin-bottom:3px;
-  font-family:'Press Start 2P',monospace;
-}
-.hpNums span:first-child { font-size:9px; }
-.hpSlash { font-size:7px; color:rgba(255,255,255,.35); }
-.hpPct   { font-size:6px; color:rgba(255,255,255,.25); margin-left:2px; }
+/* HP */
+.hpRow { display:flex; align-items:baseline; gap:4px; }
+.hpPct { font-size:9px; }
 
 /* ULT */
-.ultRow   { display:flex; align-items:center; gap:4px; margin-top:4px; }
-.ultLabel { font-size:7px; color:rgba(255,255,255,.4); white-space:nowrap; }
+.ultRow   { display:flex; align-items:center; gap:4px; margin-top:2px; }
+.ultLabel { font-size:8px; color:rgba(255,255,255,.4); font-family:'Cairo',sans-serif; white-space:nowrap; }
 .ultTrack { flex:1; height:4px; background:rgba(255,255,255,.08); border-radius:2px; overflow:hidden; }
-.ultFill  {
-  height:100%; border-radius:2px;
-  background:linear-gradient(90deg,#7C4DFF,#E040FB);
-  transition:width .4s ease;
-}
-.ultReady    { animation:ultPulse .9s ease infinite; }
-.ultVal      { font-size:7px; color:rgba(255,255,255,.35); white-space:nowrap; }
-.ultReadyTxt { color:#E040FB; font-weight:700; font-size:7px; }
+.ultFill  { height:100%; border-radius:2px; background:linear-gradient(90deg,#7C4DFF,#E040FB); transition:width .4s; }
+.ultReady { animation:ultPulse .9s ease infinite; }
+.ultVal   { font-size:8px; color:rgba(255,255,255,.4); font-family:'Cairo',sans-serif; }
+.ultReadyTxt { color:#E040FB; font-weight:700; }
 
 /* Ability */
 .abilityRow {
-  display:flex; align-items:center; gap:3px; margin-top:3px;
+  display:flex; align-items:center; gap:3px; margin-top:2px;
   background:rgba(255,255,255,.04); border-radius:6px; padding:2px 5px;
 }
-.abilityIcon { font-size:10px; line-height:1; }
-.abilityName {
-  font-size:8px; color:rgba(255,255,255,.65);   /* MORE VISIBLE */
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-  font-weight:600;
-}
+.abilityIcon { font-size:11px; }
+.abilityName { font-size:10px; color:rgba(255,255,255,.65); font-family:'Cairo',sans-serif; font-weight:600; }
 
 /* Badges */
-.badges { display:flex; flex-wrap:wrap; gap:2px; margin-top:4px; }
+.badges { display:flex; flex-wrap:wrap; gap:2px; margin-top:3px; }
 .statusBadge {
-  font-size:7px; padding:2px 5px; border-radius:5px;
-  font-family:'Press Start 2P',monospace; white-space:nowrap; line-height:1.4;
+  font-size:9px; padding:2px 5px; border-radius:5px;
+  font-family:'Cairo',sans-serif; white-space:nowrap; line-height:1.4;
 }
-.stageBadge { font-size:7px; padding:2px 5px; border-radius:4px; border:1px solid; }
+.stageBadge { font-size:9px; padding:2px 5px; border-radius:4px; border:1px solid; font-family:'Cairo',sans-serif; }
 .stPos { background:rgba(102,187,106,.2); color:#A5D6A7; border-color:#66BB6A44; }
-.stNeg { background:rgba(239,83,80,.15); color:#EF9A9A; border-color:#EF535044; }
+.stNeg { background:rgba(239,83,80,.15);  color:#EF9A9A; border-color:#EF535044; }
 
-/* Swap button */
-.swapBtn {
+/* Buttons */
+.swapBtn, .cancelSwapBtn {
   position:absolute; bottom:7px; right:7px;
   width:26px; height:26px; border-radius:8px;
-  background:rgba(255,214,0,.12); border:1px solid rgba(255,214,0,.3);
-  color:#FFD600; font-size:13px; cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  transition:all .2s; z-index:5;
+  font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:all .2s; z-index:5; border:1px solid;
+}
+.swapBtn {
+  background:rgba(255,214,0,.1); border-color:rgba(255,214,0,.3); color:#FFD600;
 }
 .swapBtn:hover { background:rgba(255,214,0,.25); transform:rotate(180deg); }
-.enemy .swapBtn { left:7px; right:auto; }
+.cancelSwapBtn {
+  background:rgba(239,83,80,.1); border-color:rgba(239,83,80,.3); color:#EF5350;
+}
+.cancelSwapBtn:hover { background:rgba(239,83,80,.25); }
+.enemy .swapBtn, .enemy .cancelSwapBtn { left:7px; right:auto; }
