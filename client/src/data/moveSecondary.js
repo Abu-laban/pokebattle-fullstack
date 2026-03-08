@@ -1,0 +1,37 @@
+// Secondary Effects for offensive moves
+export const MOVE_SECONDARY = {
+  'EMBER':{status:'BRN',chance:0.1},'FLAMETHROWER':{status:'BRN',chance:0.1},
+  'FIRE BLAST':{status:'BRN',chance:0.1},'FIRE FANG':{status:'BRN',chance:0.1},
+  'LAVA PLUME':{status:'BRN',chance:0.3},'SCALD':{status:'BRN',chance:0.3},
+  'SACRED FIRE':{status:'BRN',chance:0.5},'FLAME WHEEL':{status:'BRN',chance:0.1},
+  'HEAT WAVE':{status:'BRN',chance:0.1},'FIRE PUNCH':{status:'BRN',chance:0.1},
+  'INFERNO':{status:'BRN',chance:1.0},'FLARE BLITZ':{status:'BRN',chance:0.1},
+  'THUNDER SHOCK':{status:'PAR',chance:0.1},'THUNDERBOLT':{status:'PAR',chance:0.1},
+  'THUNDER':{status:'PAR',chance:0.3},'DISCHARGE':{status:'PAR',chance:0.3},
+  'BODY SLAM':{status:'PAR',chance:0.3},'ZAP CANNON':{status:'PAR',chance:1.0},
+  'NUZZLE':{status:'PAR',chance:1.0},'BOLT STRIKE':{status:'PAR',chance:0.2},
+  'THUNDER FANG':{status:'PAR',chance:0.1},'SPARK':{status:'PAR',chance:0.3},
+  'PLASMA FISTS':{status:'PAR',chance:0.1},'WILD CHARGE':{status:'PAR',chance:0.1},
+  'ICE BEAM':{status:'FRZ',chance:0.1},'BLIZZARD':{status:'FRZ',chance:0.1},
+  'ICE FANG':{status:'FRZ',chance:0.1},'ICE PUNCH':{status:'FRZ',chance:0.1},
+  'POWDER SNOW':{status:'FRZ',chance:0.1},'FROST BREATH':{status:'FRZ',chance:0.1},
+  'FREEZE DRY':{status:'FRZ',chance:0.1},'GLACIATE':{status:'FRZ',chance:1.0},
+  'POISON JAB':{status:'PSN',chance:0.3},'SLUDGE BOMB':{status:'PSN',chance:0.3},
+  'SLUDGE WAVE':{status:'PSN',chance:0.1},'POISON STING':{status:'PSN',chance:0.3},
+  'TWINEEDLE':{status:'PSN',chance:0.2},'CROSS POISON':{status:'PSN',chance:0.1},
+  'GUNK SHOT':{status:'PSN',chance:0.3},'POISON TAIL':{status:'PSN',chance:0.1},
+  'SLUDGE':{status:'PSN',chance:0.3},'ACID':{status:'PSN',chance:0.1},
+  'SMOG':{status:'PSN',chance:0.4},'SLUDGE DOME':{status:'PSN',chance:0.3},
+
+  // ── Confusion (CNF) ──
+  'CONFUSION':{status:'CNF',chance:0.1},'PSYBEAM':{status:'CNF',chance:0.1},
+  'SHADOW BALL':{status:'CNF',chance:0.2},'WATER PULSE':{status:'CNF',chance:0.2},
+  'DIZZY PUNCH':{status:'CNF',chance:0.2},'DYNAMIC PUNCH':{status:'CNF',chance:1.0},
+  'SIGNAL BEAM':{status:'CNF',chance:0.1},'CHATTER':{status:'CNF',chance:1.0},
+  'HURRICANE':{status:'CNF',chance:0.3},'TEETER DANCE':{status:'CNF',chance:1.0},
+  'FLATTER':{status:'CNF',chance:1.0},'SWEET KISS':{status:'CNF',chance:1.0},
+  'SUPERSONIC':{status:'CNF',chance:1.0},'CONFUSE RAY':{status:'CNF',chance:1.0},
+  'STOMP':{status:'CNF',chance:0.3},'ROCK BLAST':{status:'CNF',chance:0.1},
+  'DRACO METEOR':{status:'CNF',chance:0.1},'LEAF TORNADO':{status:'CNF',chance:0.2},
+};
+export default MOVE_SECONDARY;
