@@ -176,7 +176,7 @@ function TeamBar({ ids, onRemove }) {
         return (
           <div key={id} className={styles.teamSlot}>
             <div style={{position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: '6px'}}>
-              <PokeSprite id={id} name={poke.name} size={38} />
+              <PokeSprite id={id} name={poke.name} size={38} animated={true} />
               <div style={{textAlign: 'center', flex: 1}}>
                 <div style={{fontFamily: "'Cairo', sans-serif", fontSize: '11px', fontWeight: '700', color: '#fff', marginBottom: '3px'}}>{poke.name.toUpperCase()}</div>
                 <div style={{display: 'flex', gap: '2px', justifyContent: 'center', marginBottom: '3px', flexWrap: 'wrap'}}>

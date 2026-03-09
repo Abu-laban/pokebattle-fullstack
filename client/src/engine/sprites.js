@@ -33,18 +33,24 @@ export function pokeApiFront(id) {
   return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${apiId}.png`;
 }
 
-export function pokeApiArt(id) {
+export function pokeApiHome(id) {
   const apiId = FORM_API_IDS[id] || id;
-  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${apiId}.png`;
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${apiId}.png`;
 }
 
-// ── Fallback chain: PokeAPI front → PokeAPI art → SD animated → SD static
+export function pokeApiHomeShiny(id) {
+  const apiId = FORM_API_IDS[id] || id;
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/shiny/${apiId}.png`;
+}
+
+// ── Fallback chain: HOME artwork → PokeAPI art → PokeAPI front → SD animated → SD static
 export function getSpriteChain(id, name) {
   const slug  = nameToSD(name, id);
   const apiId = FORM_API_IDS[id] || id;
   return [
-    `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${apiId}.png`,
+    `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${apiId}.png`,
     `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${apiId}.png`,
+    `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${apiId}.png`,
     `https://play.pokemonshowdown.com/sprites/ani/${slug}.gif`,
     `https://play.pokemonshowdown.com/sprites/gen5/${slug}.png`,
   ];

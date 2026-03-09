@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { loadSpriteWithFallback } from '../../engine/sprites.js';
 import styles from './PokeSprite.module.css';
 
-export function PokeSprite({ id, name, size = 88, className = '', style = {} }) {
+export function PokeSprite({ id, name, size = 88, className = '', style = {}, animated = false, rotating = false }) {
   const imgRef = useRef(null);
 
   useEffect(() => {
@@ -12,11 +12,18 @@ export function PokeSprite({ id, name, size = 88, className = '', style = {} }) 
     }
   }, [id, name]);
 
+  const spriteClasses = [
+    styles.sprite,
+    animated && styles.animated,
+    rotating && styles.rotating,
+    className
+  ].filter(Boolean).join(' ');
+
   return (
     <img
       ref={imgRef}
       alt={name || ''}
-      className={`${styles.sprite} ${className}`}
+      className={spriteClasses}
       style={{ width: size, height: size, ...style }}
     />
   );

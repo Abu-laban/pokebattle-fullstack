@@ -6,3 +6,21 @@
   filter: drop-shadow(0 4px 12px rgba(0,0,0,.65));
   transition: opacity .3s, transform .3s;
 }
+
+.sprite.animated {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+}
+
+.sprite.rotating {
+  animation: rotate 4s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(360deg); }
+}
