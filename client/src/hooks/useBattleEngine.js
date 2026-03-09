@@ -115,7 +115,7 @@ export function useBattleEngine() {
     if (mv.u) attacker.consumeUlt(); else attacker.chargeUlt(20);
 
     const effTxt = mult === 0 ? ' مناعة!' : mult >= 2 ? ' فعّال جداً! 🔥' : mult <= 0.5 ? ' غير فعّال...' : '';
-    log('⚔ ' + attacker.poke.name + ' → ' + target.poke.name + ': ' + mv.n + ' (-' + dmg + ' HP)' + effTxt + (stab > 1 ? ' [STAB]' : ''), 'player-atk');
+    log('⚔ ' + attacker.poke.name + ' → ' + target.poke.name + ': ' + mv.n + ' (-' + dmg + ' HP)' + effTxt + (stab > 1 ? ' [STAB]' : ''), 'playerAtk');
 
     if (mult >= 2) progress.recordSuperEff?.();
 
@@ -189,7 +189,7 @@ export function useBattleEngine() {
     if (mv.u) attacker.consumeUlt(); else attacker.chargeUlt(20);
 
     const effTxt = mult >= 2 ? ' فعّال جداً! 🔥' : mult <= 0.5 ? ' غير فعّال...' : '';
-    log('💥 ' + attacker.poke.name + ' → ' + target.poke.name + ': ' + mv.n + ' (-' + dmg + ' HP)' + effTxt, 'enemy-atk');
+    log('💥 ' + attacker.poke.name + ' → ' + target.poke.name + ': ' + mv.n + ' (-' + dmg + ' HP)' + effTxt, 'enemyAtk');
 
     const sec = MOVE_SECONDARY[mv.n];
     if (sec && Math.random() < sec.chance && target.isAlive) StatusEngine.apply(target, sec.status, log);
