@@ -1,7 +1,8 @@
 // FighterCard — no class badges; shows swap/target UI
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { HPBar }                  from '../UI/HPBar.jsx';
 import { loadSpriteWithFallback } from '../../engine/sprites.js';
+import { subscribeBattleAnim } from '../../store/battleStore.js';
 import { STAT_AR }                from '../../engine/status.js';
 import { getPokeAbility }         from '../../data/abilities.js';
 import styles                     from './FighterCard.module.css';
@@ -21,10 +22,29 @@ export function FighterCard({
   isTarget, onTarget,
 }) {
   const imgRef = useRef(null);
+  const [animCls, setAnimCls] = useState('');
+
   useEffect(() => {
     if (imgRef.current && member?.poke)
       loadSpriteWithFallback(imgRef.current, member.poke.id, member.poke.name);
   }, [member?.poke?.id]);
+
+  // Subscribe to battle hit animations
+  useEffect(() => {
+    return subscribeBattleAnim(({ type, fieldPos: fp, isEnemy: ie }) => {
+      // React if this card matches: enemy cards react to enemy events, player to player
+      const cardIsEnemy = !isPlayer;
+      if (ie !== cardIsEnemy) return;
+      if (fp !== fieldPos) return;
+      const cls = type === 'attack' ? styles.sprAttack
+        : type === 'superEff' ? styles.sprSuperEff
+        : type === 'hit' ? styles.sprHit
+        : type === 'heal' ? styles.sprHeal : '';
+      if (!cls) return;
+      setAnimCls(cls);
+      setTimeout(() => setAnimCls(''), 600);
+    });
+  }, [isPlayer, fieldPos]);
 
   // ── Empty slot ──────────────────────────────────────────────────────────────
   if (!member) {
@@ -73,7 +93,7 @@ export function FighterCard({
       {/* Sprite */}
       <div className={styles.spriteWrap}>
         <img ref={imgRef} alt={poke.name}
-          className={`${styles.sprite} ${fainted ? styles.sprFainted : ''}`} />
+          className={`${styles.sprite} ${fainted ? styles.sprFainted : ''} ${animCls}`} />
       </div>
 
       {/* Info */}

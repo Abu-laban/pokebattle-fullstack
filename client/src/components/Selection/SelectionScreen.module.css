@@ -193,3 +193,40 @@
 .abilityTag{ font-size:12px; line-height:1; }
 .cardHp    { font-size:10px; color:rgba(255,255,255,.5); font-weight:700; font-family:'Cairo',sans-serif; }
 .bstTag    { font-size:10px; color:rgba(255,214,0,.7); font-family:'Cairo',sans-serif; font-weight:700; }
+
+/* ══ POKEBALL THROW ANIMATION ══ */
+@keyframes pokeThrow {
+  0%   { transform: translate(-50%, -50%) scale(1);    opacity: 1; }
+  30%  { transform: translate(-50%, -50%) scale(1.4) rotate(-20deg); opacity: 1; }
+  60%  { transform: translate(calc(-50% + 0px), calc(-50% - 80px)) scale(.7) rotate(360deg); opacity: .9; }
+  85%  { transform: translate(calc(-50% + 0px), calc(-50% - 140px)) scale(.4) rotate(540deg); opacity: .6; }
+  100% { transform: translate(calc(-50% + 0px), calc(-50% - 180px)) scale(0) rotate(720deg); opacity: 0; }
+}
+@keyframes cardSelect {
+  0%   { transform: scale(1); }
+  25%  { transform: scale(1.12); box-shadow: 0 0 0 3px rgba(255,214,0,.8); }
+  60%  { transform: scale(.97); }
+  100% { transform: scale(1); }
+}
+@keyframes cardDeselect {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(.93); }
+  100% { transform: scale(1); }
+}
+
+.pokeballThrow {
+  position: fixed;
+  left: var(--bx, 50%);
+  top: var(--by, 50%);
+  z-index: 999;
+  font-size: 28px;
+  pointer-events: none;
+  animation: pokeThrow .7s cubic-bezier(.25,.46,.45,.94) both;
+  filter: drop-shadow(0 0 8px rgba(255,214,0,.8));
+  line-height: 1;
+}
+
+/* Card select flash */
+.card.sel {
+  animation: cardSelect .4s cubic-bezier(.34,1.56,.64,1) both !important;
+}

@@ -39,6 +39,7 @@ export function TowerScreen() {
   const setScreen    = useBattleStore(s => s.setScreen);
   const [search, setSearch] = useState('');
   const [genFilter, setGenFilter] = useState('all');
+  const [genOpen, setGenOpen] = useState(false);
 
   const available = useMemo(() => {
     return DEX.filter(p => {
@@ -87,12 +88,31 @@ export function TowerScreen() {
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
-        <select className={styles.genSelect} value={genFilter} onChange={e => setGenFilter(e.target.value)}>
-          <option value="all">كل الأجيال</option>
-          {GEN_RANGES.map(g => (
-            <option key={g.label} value={g.label}>{g.label}</option>
-          ))}
-        </select>
+        <div className={styles.genDropdown}>
+          <button
+            className={styles.genDropdownBtn}
+            onClick={() => setGenOpen(v => !v)}
+          >
+            <span>{genFilter === 'all' ? 'كل الأجيال' : genFilter}</span>
+            <span className={styles.genDropdownArrow}>{genOpen ? '▲' : '▼'}</span>
+          </button>
+          {genOpen && (
+            <div className={styles.genDropdownMenu}>
+              <button className={`${styles.genOption} ${genFilter==='all'?styles.genOptionActive:''}`}
+                onClick={() => { setGenFilter('all'); setGenOpen(false); }}>
+                كل الأجيال
+              </button>
+              {GEN_RANGES.map(g => (
+                <button key={g.label}
+                  className={`${styles.genOption} ${genFilter===g.label?styles.genOptionActive:''}`}
+                  style={{ '--gc': g.color }}
+                  onClick={() => { setGenFilter(g.label); setGenOpen(false); }}>
+                  {g.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className={styles.gridInfo}>

@@ -12,6 +12,7 @@ import { BattleLog }        from './BattleLog.jsx';
 import { MoveGrid }         from './MoveGrid.jsx';
 import { DualMovePanel }    from './DualMovePanel.jsx';
 import { ResultOverlay }    from '../Overlays/ResultOverlay.jsx';
+import { subscribeBattleAnim } from '../../store/battleStore.js';
 import { loadSpriteWithFallback } from '../../engine/sprites.js';
 import styles from './BattleScreen.module.css';
 
@@ -51,10 +52,23 @@ function BattleMain() {
 
   const { executeDualTurn, executeTowerTurn, executeTowerSwap } = useBattleEngine();
 
-  const [swapFor, setSwapFor]     = useState(null);
-  const [targetFor, setTargetFor] = useState(null);
-  const [timer, setTimer]         = useState(30);
+  const [swapFor, setSwapFor]         = useState(null);
+  const [targetFor, setTargetFor]     = useState(null);
+  const [confirmRetreat, setConfirmRetreat] = useState(false);
+  const [arenaFlash, setArenaFlash] = useState(null);
+  const [timer, setTimer]             = useState(30);
   const timerRef = useRef(null);
+
+  // ── Arena flash on hit ──────────────────────────────────────────────────────
+  useEffect(() => {
+    return subscribeBattleAnim(({ type, isEnemy }) => {
+      const color = isEnemy
+        ? 'rgba(255,107,53,.6)' // enemy attack: orange
+        : 'rgba(79,195,247,.6)'; // player attack: blue
+      setArenaFlash({ color, key: Date.now() });
+      setTimeout(() => setArenaFlash(null), 520);
+    });
+  }, []);
 
   // ── Timer ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -196,6 +210,10 @@ function BattleMain() {
       {/* ── ARENA ── */}
       <div className={styles.arena}>
         <div className={styles.arenaGlow} />
+        {arenaFlash && (
+          <div key={arenaFlash.key} className={styles.arenaFlash}
+            style={{ background: arenaFlash.color }} />
+        )}
         <div className={styles.fighters}>
 
           {/* Player side */}
@@ -317,11 +335,30 @@ function BattleMain() {
       {/* ── BOTTOM ROW: log + retreat ── */}
       <div className={styles.bottomRow}>
         <BattleLog />
-        <button className={styles.retreatBtn} onClick={resetGame} title="انسحاب من المعركة">
+        <button className={styles.retreatBtn} onClick={() => setConfirmRetreat(true)} title="انسحاب من المعركة">
           <span className={styles.retreatIcon}>🏳</span>
           <span className={styles.retreatTxt}>انسحاب</span>
         </button>
       </div>
+
+      {/* ── RETREAT CONFIRM DIALOG ── */}
+      {confirmRetreat && (
+        <div className={styles.retreatOverlay}>
+          <div className={styles.retreatDialog}>
+            <div className={styles.retreatDialogIcon}>🏳</div>
+            <div className={styles.retreatDialogTitle}>الانسحاب من المعركة؟</div>
+            <div className={styles.retreatDialogSub}>سيتم إنهاء المعركة الحالية وخسارة الجولة</div>
+            <div className={styles.retreatDialogBtns}>
+              <button className={styles.retreatConfirmBtn} onClick={() => { setConfirmRetreat(false); resetGame(); }}>
+                🏳 نعم، انسحاب
+              </button>
+              <button className={styles.retreatCancelBtn} onClick={() => setConfirmRetreat(false)}>
+                ⚔ متابعة المعركة
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

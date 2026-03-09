@@ -86,6 +86,7 @@ export function useBattleEngine() {
     if (!target || !target.isAlive) { callback?.(); return; }
 
     playTypeSound(mv.t);
+    emitBattleAnim('attack', fieldPos, false);
     if (mv.t === 'FIRE' && target.hasStatus('FRZ')) {
       target.removeStatus('FRZ');
       log('🔥 الهجوم الناري أذاب تجميد ' + target.poke.name + '!', 'sys');
@@ -113,6 +114,9 @@ export function useBattleEngine() {
     else if (cat === 'special') target._lastSpecDmgReceived = dmg;
     target.dealDamage(dmg);
     if (mv.u) attacker.consumeUlt(); else attacker.chargeUlt(20);
+    // Get target field position for animation
+    const tFieldPos = s.eField.indexOf(s.eField.find((ti, fi) => s.enTeam[ti] === target.poke ? fi : -1));
+    emitBattleAnim(mult >= 2 ? 'superEff' : 'hit', s.eField.findIndex(ti => ti !== null && s.enTeam[ti]?.poke?.name === target.poke.name), true);
 
     const effTxt = mult === 0 ? ' مناعة!' : mult >= 2 ? ' فعّال جداً! 🔥' : mult <= 0.5 ? ' غير فعّال...' : '';
     log('⚔ ' + attacker.poke.name + ' → ' + target.poke.name + ': ' + mv.n + ' (-' + dmg + ' HP)' + effTxt + (stab > 1 ? ' [STAB]' : ''), 'playerAtk');

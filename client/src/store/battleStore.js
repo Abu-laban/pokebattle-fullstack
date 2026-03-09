@@ -235,3 +235,11 @@ export const useBattleStore = create((set, get) => ({
     });
   },
 }));
+
+// ── Battle animation events (ephemeral, no persistence needed) ──
+// External subscribers
+const _animListeners = new Set();
+export function subscribeBattleAnim(fn) { _animListeners.add(fn); return () => _animListeners.delete(fn); }
+export function emitBattleAnim(type, fieldPos, isEnemy) {
+  _animListeners.forEach(fn => fn({ type, fieldPos, isEnemy }));
+}

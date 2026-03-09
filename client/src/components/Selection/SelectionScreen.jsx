@@ -53,6 +53,17 @@ export function SelectionScreen() {
   const towerBest   = useProgressStore(s => s.towerBest);
 
   const [search, setSearch] = useState('');
+  const [throwAnim, setThrowAnim] = useState(null); // { id, x, y }
+
+  const handleSelectPoke = useCallback((id, e) => {
+    // Pokeball throw animation: from click position toward team bar
+    const rect = e.currentTarget.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    setThrowAnim({ id, x: cx, y: cy, key: Date.now() });
+    setTimeout(() => setThrowAnim(null), 700);
+    togglePoke(id);
+  }, [togglePoke]);
 
   const filtered = useMemo(() => {
     const [lo, hi] = GEN_RANGES[currentGen] || [1, 999];
@@ -173,7 +184,7 @@ function PokeGrid({ pokes, selectedIds, onSelect }) {
           selected={selectedIds.includes(p.id)}
           disabled={selectedIds.length >= 4 && !selectedIds.includes(p.id)}
           delay={Math.min(i * 0.02, 0.5)}
-          onSelect={() => onSelect(p.id)}
+          onSelect={(e) => onSelect(p.id, e)}
         />
       ))}
     </div>
@@ -199,7 +210,7 @@ function PokeCard({ poke, selected, disabled, delay, onSelect }) {
       ref={ref}
       className={`${styles.card} ${selected ? styles.sel : ''} ${disabled ? styles.disabled : ''}`}
       style={{ animationDelay: `${delay}s` }}
-      onClick={disabled ? undefined : onSelect}
+      onClick={disabled ? undefined : (e) => onSelect(e)}
     >
       {vis && <PokeSprite id={poke.id} name={poke.name} size={80} className={styles.cardImg} />}
       {!vis && <div className={styles.cardImgPlaceholder} />}
