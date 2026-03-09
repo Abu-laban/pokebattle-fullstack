@@ -1,7 +1,8 @@
+/* PokeSprite */
 .sprite {
   object-fit: contain;
   display: block;
   image-rendering: pixelated;
-  filter: drop-shadow(0 4px 10px rgba(0,0,0,.6));
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,.65));
   transition: opacity .3s, transform .3s;
 }

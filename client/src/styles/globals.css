@@ -1,30 +1,57 @@
 /* ══════════════════════════════════════════════════════
-   PokéBattle — Global Styles (Cairo Arabic + Pixel)
+   PokéBattle — Global Design System
+   Dark space-age aesthetic · Cairo Arabic · Pixel accents
    ══════════════════════════════════════════════════════ */
 
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Press+Start+2P&display=swap');
 
+/* ── Design Tokens ── */
 :root {
-  --fire:     #FF6B35;
-  --water:    #4FC3F7;
-  --grass:    #66BB6A;
-  --electric: #FFD600;
-  --psychic:  #EC407A;
-  --ice:      #80DEEA;
-  --dragon:   #5C6BC0;
-  --dark:     #546E7A;
-  --ghost:    #7E57C2;
-  --gold:     #FFD600;
-  --accent:   #4FC3F7;
-  --bg:       #060d1a;
-  --surface:  rgba(255,255,255,.04);
-  --text:     #ffffff;
-  --dim:      rgba(255,255,255,.5);
+  /* Colors */
+  --gold:       #FFD600;
+  --fire:       #FF6B35;
+  --water:      #4FC3F7;
+  --grass:      #66BB6A;
+  --electric:   #FFD600;
+  --psychic:    #EC407A;
+  --ice:        #80DEEA;
+  --dragon:     #5C6BC0;
+  --dark:       #546E7A;
+  --ghost:      #7E57C2;
+  --accent:     #4FC3F7;
+  --purple:     #7C4DFF;
+  --pink:       #E040FB;
+
+  /* Surfaces */
+  --bg:         #05080f;
+  --bg2:        #080e1a;
+  --surface:    rgba(255,255,255,.05);
+  --surface2:   rgba(255,255,255,.08);
+  --border:     rgba(255,255,255,.1);
+  --border2:    rgba(255,255,255,.06);
+
+  /* Text */
+  --text:       #ffffff;
+  --text-dim:   rgba(255,255,255,.55);
+  --text-faint: rgba(255,255,255,.3);
+
+  /* Radii */
+  --r-sm:  10px;
+  --r-md:  16px;
+  --r-lg:  22px;
+  --r-xl:  28px;
+
+  /* Shadows */
+  --shadow-card: 0 4px 24px rgba(0,0,0,.6), 0 1px 3px rgba(0,0,0,.4);
+  --shadow-glow-gold: 0 0 20px rgba(255,214,0,.25);
+  --shadow-glow-blue: 0 0 20px rgba(79,195,247,.2);
 }
 
+/* ── Reset ── */
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-html { font-size:16px; }
+html { font-size:16px; -webkit-text-size-adjust:100%; }
 
+/* ── Body ── */
 body {
   font-family: 'Cairo', sans-serif;
   color: var(--text);
@@ -32,39 +59,110 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   direction: rtl;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ── Background ── */
+/* ══ Background System ══ */
+
+/* Stars layer */
+.stars-layer {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+}
+.star {
+  position: absolute; border-radius: 50%;
+  background: #fff; opacity: .55;
+  animation: starTwinkle var(--d, 3s) ease-in-out var(--delay, 0s) infinite alternate;
+}
+@keyframes starTwinkle { from{opacity:.15} to{opacity:.75} }
+
+/* Main background canvas */
 #root::before {
-  content:''; position:fixed; inset:0; z-index:0;
+  content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background:
-    radial-gradient(ellipse at 20% 50%, rgba(255,107,53,.14) 0%, transparent 55%),
-    radial-gradient(ellipse at 80% 30%, rgba(79,195,247,.11) 0%, transparent 55%),
-    radial-gradient(ellipse at 50% 90%, rgba(102,187,106,.09) 0%, transparent 50%),
-    linear-gradient(180deg, #060d1a 0%, #0a1628 100%);
-  pointer-events:none;
+    radial-gradient(ellipse at 15% 45%, rgba(255,107,53,.13) 0%, transparent 52%),
+    radial-gradient(ellipse at 82% 25%, rgba(79,195,247,.10) 0%, transparent 52%),
+    radial-gradient(ellipse at 50% 88%, rgba(102,187,106,.08) 0%, transparent 46%),
+    radial-gradient(ellipse at 70% 70%, rgba(124,77,255,.07) 0%, transparent 40%),
+    linear-gradient(160deg, #060c1c 0%, #08101f 50%, #050b18 100%);
 }
 
-/* ── Gen backgrounds ── */
-body.gen-1 #root::before { background:radial-gradient(ellipse at 25% 50%,rgba(229,57,53,.18),transparent 55%),radial-gradient(ellipse at 75% 30%,rgba(255,112,67,.12),transparent 55%),linear-gradient(180deg,#1a0404,#0d0202); }
-body.gen-2 #root::before { background:radial-gradient(ellipse at 25% 50%,rgba(255,179,0,.18),transparent 55%),radial-gradient(ellipse at 75% 30%,rgba(129,199,132,.12),transparent 55%),linear-gradient(180deg,#1a1000,#0d0900); }
-body.gen-3 #root::before { background:radial-gradient(ellipse at 25% 50%,rgba(21,101,192,.18),transparent 55%),radial-gradient(ellipse at 75% 30%,rgba(56,142,60,.12),transparent 55%),linear-gradient(180deg,#00101a,#00080f); }
-body.gen-4 #root::before { background:radial-gradient(ellipse at 25% 50%,rgba(57,73,171,.2),transparent 55%),radial-gradient(ellipse at 75% 30%,rgba(171,71,188,.12),transparent 55%),linear-gradient(180deg,#04041a,#020210); }
-body.gen-5 #root::before { background:radial-gradient(ellipse at 25% 50%,rgba(55,55,55,.3),transparent 55%),radial-gradient(ellipse at 75% 30%,rgba(239,83,80,.1),transparent 55%),linear-gradient(180deg,#0a0a0a,#050505); }
-body.gen-6 #root::before { background:radial-gradient(ellipse at 25% 50%,rgba(236,64,122,.18),transparent 55%),radial-gradient(ellipse at 75% 30%,rgba(156,39,176,.12),transparent 55%),linear-gradient(180deg,#1a000f,#0d0008); }
-body.gen-7 #root::before { background:radial-gradient(ellipse at 25% 50%,rgba(255,193,7,.15),transparent 55%),radial-gradient(ellipse at 75% 30%,rgba(0,172,193,.12),transparent 55%),linear-gradient(180deg,#1a1000,#0a0d10); }
+/* Animated aurora overlay */
+#root::after {
+  content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(79,195,247,.06) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 30% at 20% 100%, rgba(255,107,53,.05) 0%, transparent 70%);
+}
 
-/* ── App wrapper ── */
-#root { position:relative; z-index:1; }
-.app-wrap { max-width:960px; margin:0 auto; padding:14px 16px; }
+/* ── Gen-specific atmosphere ── */
+body.gen-1 #root::before {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(229,57,53,.2), transparent 55%),
+    radial-gradient(ellipse at 80% 30%, rgba(255,112,67,.14), transparent 55%),
+    radial-gradient(ellipse at 60% 80%, rgba(229,57,53,.1), transparent 50%),
+    linear-gradient(155deg, #1c0404 0%, #0d0202 100%);
+}
+body.gen-2 #root::before {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(255,179,0,.2), transparent 55%),
+    radial-gradient(ellipse at 75% 30%, rgba(129,199,132,.14), transparent 55%),
+    linear-gradient(155deg, #1a1100 0%, #0d0a00 100%);
+}
+body.gen-3 #root::before {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(21,101,192,.2), transparent 55%),
+    radial-gradient(ellipse at 75% 30%, rgba(56,142,60,.15), transparent 55%),
+    linear-gradient(155deg, #001120 0%, #00080f 100%);
+}
+body.gen-4 #root::before {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(57,73,171,.22), transparent 55%),
+    radial-gradient(ellipse at 75% 30%, rgba(171,71,188,.14), transparent 55%),
+    linear-gradient(155deg, #05051f 0%, #020212 100%);
+}
+body.gen-5 #root::before {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(78,78,78,.3), transparent 55%),
+    radial-gradient(ellipse at 75% 30%, rgba(239,83,80,.1), transparent 55%),
+    linear-gradient(155deg, #0d0d0d 0%, #060606 100%);
+}
+body.gen-6 #root::before {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(236,64,122,.2), transparent 55%),
+    radial-gradient(ellipse at 75% 30%, rgba(156,39,176,.15), transparent 55%),
+    linear-gradient(155deg, #1c0011 0%, #0e0008 100%);
+}
+body.gen-7 #root::before {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(255,193,7,.17), transparent 55%),
+    radial-gradient(ellipse at 75% 30%, rgba(0,172,193,.13), transparent 55%),
+    linear-gradient(155deg, #1a1302 0%, #0a0d12 100%);
+}
+
+/* ── Structure ── */
+#root    { position:relative; z-index:1; }
+.app-wrap { max-width:960px; margin:0 auto; padding:14px 16px 28px; }
 
 /* ── Scrollbar ── */
-::-webkit-scrollbar { width:5px; }
+::-webkit-scrollbar       { width:5px; height:5px; }
 ::-webkit-scrollbar-track { background:rgba(255,255,255,.03); }
-::-webkit-scrollbar-thumb { background:rgba(255,255,255,.15); border-radius:3px; }
+::-webkit-scrollbar-thumb { background:rgba(255,255,255,.16); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,.28); }
 
-/* ── Pixel font utility ── */
+/* ── Weather body classes ── */
+body.weather-sun  #root::before { filter:hue-rotate(-15deg) saturate(1.2); }
+body.weather-rain #root::before { filter:hue-rotate(160deg) saturate(1.1); }
+body.weather-sand #root::before { filter:hue-rotate(-30deg) saturate(1.3) brightness(.9); }
+body.weather-hail #root::before { filter:hue-rotate(180deg) brightness(.9); }
+
+/* ── Utilities ── */
 .pixel { font-family:'Press Start 2P', monospace; }
+.ar    { font-family:'Cairo', sans-serif; }
 
-/* ── Arabic helper ── */
-.ar { font-family:'Cairo',sans-serif; }
+/* ── Glass card base ── */
+.glass-card {
+  background: rgba(10,16,32,.85);
+  border: 1px solid rgba(255,255,255,.09);
+  backdrop-filter: blur(18px);
+  box-shadow: var(--shadow-card);
+}

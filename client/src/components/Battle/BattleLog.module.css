@@ -1,18 +1,33 @@
+/* ══ BattleLog — Battle message stream ══ */
+
+@keyframes logIn { from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:none} }
+
 .log {
-  background:rgba(0,0,0,.5); border-radius:14px; padding:10px 12px;
-  max-height:130px; overflow-y:auto; display:flex; flex-direction:column; gap:3px;
-  border:1px solid rgba(255,255,255,.07); font-family:'Cairo',sans-serif;
-  scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.15) transparent;
+  background: rgba(4,8,18,.75);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 16px;
+  padding: 11px 14px;
+  max-height: 140px;
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 3px;
+  font-family: 'Cairo', sans-serif;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.14) transparent;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,.3);
 }
 .entry {
-  font-size:13px; color:rgba(255,255,255,.7); line-height:1.4;
-  padding:1px 0; border-bottom:1px solid rgba(255,255,255,.04);
-  animation:logIn .2s ease;
+  font-size: 13px;
+  color: rgba(255,255,255,.65);
+  line-height: 1.5;
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  animation: logIn .2s ease;
 }
-.entry:last-child { border-bottom:none; }
-@keyframes logIn { from{opacity:0;transform:translateX(-4px)} to{opacity:1;transform:none} }
-.sys       { color:rgba(255,255,255,.5); font-size:12px; }
-.player-atk{ color:#81C784; font-weight:700; }
-.enemy-atk { color:#EF9A9A; font-weight:700; }
-.death     { color:#FF8A65; font-weight:700; }
-.heal      { color:#A5D6A7; }
+.entry:last-child { border-bottom: none; }
+
+/* Log entry types */
+.sys        { color: rgba(255,255,255,.4); font-size: 12px; }
+.player-atk { color: #81C784; font-weight: 700; }
+.enemy-atk  { color: #EF9A9A; font-weight: 700; }
+.death      { color: #FF8A65; font-weight: 700; }
+.heal       { color: #80DEEA; }

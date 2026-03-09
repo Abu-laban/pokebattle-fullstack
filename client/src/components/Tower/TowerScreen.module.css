@@ -1,127 +1,144 @@
-/* ══ TowerScreen ══ */
-@keyframes slideIn  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
-@keyframes cardIn   { from{opacity:0;transform:scale(.95)} to{opacity:1;transform:scale(1)} }
+/* ══ TowerScreen — Battle Tower team selection ══ */
 
-.screen { animation:slideIn .3s ease; }
+@keyframes slideIn { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
+@keyframes cardIn  { from{opacity:0;transform:scale(.95)} to{opacity:1;transform:scale(1)} }
 
-/* Header */
+.screen { animation: slideIn .3s ease; }
+
+/* ── Header ── */
 .header {
   display:flex; align-items:flex-start; gap:12px; margin-bottom:20px;
 }
 .back {
-  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.15);
-  border-radius:10px; color:rgba(255,255,255,.6); font-size:13px; font-family:'Cairo',sans-serif;
-  padding:8px 14px; cursor:pointer; transition:all .2s; white-space:nowrap; flex-shrink:0;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:11px; color:rgba(255,255,255,.6);
+  font-size:13px; font-family:'Cairo',sans-serif;
+  padding:9px 16px; cursor:pointer; transition:all .2s;
+  white-space:nowrap; flex-shrink:0;
 }
-.back:hover { color:#fff; border-color:rgba(255,255,255,.4); }
+.back:hover { color:#fff; border-color:rgba(255,255,255,.38); background:rgba(255,255,255,.1); }
 .titleArea { flex:1; }
 .title {
-  font-family:'Cairo',sans-serif; font-size:22px; font-weight:900; color:#FFD600;
-  text-shadow:0 0 20px rgba(255,214,0,.3); margin-bottom:4px;
+  font-family:'Cairo',sans-serif; font-size:24px; font-weight:900; color:#FFD600;
+  text-shadow:0 0 24px rgba(255,214,0,.35); margin-bottom:4px;
+  line-height:1.2;
 }
 .sub { font-family:'Cairo',sans-serif; font-size:13px; color:rgba(255,255,255,.4); }
 
-/* Team slots */
+/* ── Team slots ── */
 .slots {
   display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px;
 }
 .slot {
-  background:rgba(255,255,255,.04); border-radius:16px; padding:10px 8px;
-  text-align:center; position:relative; border:2px solid rgba(255,255,255,.08);
-  min-height:110px; display:flex; flex-direction:column; align-items:center; gap:3px;
+  background:rgba(255,255,255,.04);
+  border:1.5px solid rgba(255,255,255,.09);
+  border-radius:18px; padding:11px 8px;
+  text-align:center; position:relative;
+  min-height:115px;
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
 }
-.empty { border-style:dashed; justify-content:center; }
+.empty  { border-style:dashed; border-color:rgba(255,255,255,.07); justify-content:center; }
 .filled { }
 .slotNum {
-  position:absolute; top:6px; left:8px;
-  font-size:10px; color:rgba(255,255,255,.3); font-family:'Press Start 2P',monospace;
+  position:absolute; top:7px; left:9px;
+  font-family:'Press Start 2P',monospace;
+  font-size:8px; color:rgba(255,255,255,.25);
 }
-.plus        { font-size:24px; opacity:.25; }
-.emptyLabel  { font-family:'Cairo',sans-serif; font-size:12px; color:rgba(255,255,255,.25); }
-.slotImg     { width:52px; height:52px; object-fit:contain; image-rendering:pixelated; filter:drop-shadow(0 2px 6px rgba(0,0,0,.5)); }
-.slotName    { font-family:'Cairo',sans-serif; font-size:13px; font-weight:700; color:#fff; line-height:1.2; }
-.slotTypes   { display:flex; gap:3px; justify-content:center; flex-wrap:wrap; }
-.slotHp      { font-family:'Cairo',sans-serif; font-size:11px; color:rgba(255,255,255,.5); }
-.slotGen     { font-family:'Cairo',sans-serif; font-size:10px; font-weight:700; }
-.removeBtn {
-  position:absolute; top:5px; right:5px;
-  width:20px; height:20px; border-radius:50%;
-  background:rgba(239,83,80,.5); border:none; color:#fff;
+.plus       { font-size:26px; opacity:.18; }
+.emptyLabel { font-family:'Cairo',sans-serif; font-size:12px; color:rgba(255,255,255,.22); }
+.slotImg    { width:54px; height:54px; object-fit:contain; image-rendering:pixelated; filter:drop-shadow(0 3px 8px rgba(0,0,0,.5)); }
+.slotName   { font-family:'Cairo',sans-serif; font-size:13px; font-weight:700; color:#fff; line-height:1.2; }
+.slotTypes  { display:flex; gap:3px; justify-content:center; flex-wrap:wrap; }
+.slotHp     { font-family:'Cairo',sans-serif; font-size:11px; color:rgba(255,100,100,.7); }
+.slotGen    { font-family:'Cairo',sans-serif; font-size:10px; font-weight:700; }
+.removeBtn  {
+  position:absolute; top:7px; right:7px;
+  width:22px; height:22px; border-radius:50%;
+  background:rgba(239,83,80,.45); border:none; color:#fff;
   font-size:10px; cursor:pointer; transition:all .2s;
+  display:flex; align-items:center; justify-content:center;
 }
-.removeBtn:hover { background:#EF5350; transform:scale(1.15); }
+.removeBtn:hover { background:#EF5350; transform:scale(1.15); box-shadow:0 2px 8px rgba(239,83,80,.4); }
 
-/* Start button */
+/* ── Start button ── */
 .startBtn {
-  width:100%; padding:14px; margin-bottom:14px;
-  background:linear-gradient(135deg,rgba(255,214,0,.18),rgba(255,107,53,.1));
-  border:2px solid rgba(255,214,0,.4); border-radius:14px;
+  width:100%; padding:15px; margin-bottom:14px;
+  background:linear-gradient(135deg,rgba(255,214,0,.14),rgba(255,107,53,.09));
+  border:2px solid rgba(255,214,0,.38); border-radius:16px;
   color:#FFD600; font-family:'Cairo',sans-serif; font-size:16px; font-weight:700;
-  cursor:pointer; transition:all .25s; display:flex; align-items:center; justify-content:center; gap:8px;
+  cursor:pointer; transition:all .25s;
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  box-shadow:0 4px 18px rgba(255,214,0,.08);
 }
-.startBtn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 24px rgba(255,214,0,.25); }
-.startBtn:disabled { opacity:.3; cursor:not-allowed; }
-.counter { font-size:14px; opacity:.7; }
+.startBtn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 10px 28px rgba(255,214,0,.22); border-color:rgba(255,214,0,.6); }
+.startBtn:disabled { opacity:.28; cursor:not-allowed; }
+.counter { font-size:14px; opacity:.65; }
 
-/* Filter row */
-.filterRow {
-  display:flex; gap:8px; margin-bottom:8px;
-}
+/* ── Filters ── */
+.filterRow { display:flex; gap:8px; margin-bottom:8px; }
 .search {
-  flex:1; padding:10px 14px;
-  background:rgba(255,255,255,.05); border:1.5px solid rgba(255,255,255,.1);
-  border-radius:12px; color:#fff; font-size:14px; outline:none; font-family:'Cairo',sans-serif;
+  flex:1; padding:11px 16px;
+  background:rgba(255,255,255,.05);
+  border:1.5px solid rgba(255,255,255,.1);
+  border-radius:13px; color:#fff; font-size:14px; outline:none;
+  font-family:'Cairo',sans-serif; transition:all .22s;
 }
 .search::placeholder { color:rgba(255,255,255,.3); }
-.search:focus { border-color:rgba(79,195,247,.4); }
+.search:focus { border-color:rgba(79,195,247,.4); background:rgba(79,195,247,.04); }
 .genSelect {
-  padding:10px 12px;
-  background:rgba(255,255,255,.05); border:1.5px solid rgba(255,255,255,.1);
-  border-radius:12px; color:#fff; font-size:13px; outline:none; cursor:pointer;
-  font-family:'Cairo',sans-serif;
+  padding:11px 13px;
+  background:rgba(255,255,255,.05);
+  border:1.5px solid rgba(255,255,255,.1);
+  border-radius:13px; color:#fff; font-size:13px; outline:none; cursor:pointer;
+  font-family:'Cairo',sans-serif; transition:all .22s;
 }
+.genSelect:focus { border-color:rgba(79,195,247,.4); }
 .gridInfo {
   font-family:'Cairo',sans-serif; font-size:12px; color:rgba(255,255,255,.3);
-  text-align:center; margin-bottom:10px;
+  text-align:center; margin-bottom:11px;
 }
 
-/* Pokemon grid */
+/* ── Pokemon grid ── */
 .grid {
-  display:grid; grid-template-columns:repeat(auto-fill,minmax(118px,1fr)); gap:8px;
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(112px,1fr)); gap:9px;
 }
 .card {
-  background:rgba(255,255,255,.04); border:1.5px solid rgba(255,255,255,.08);
-  border-radius:14px; padding:10px 6px 8px; text-align:center;
-  cursor:pointer; transition:all .22s; position:relative; overflow:hidden;
+  background:rgba(255,255,255,.05);
+  border:1.5px solid rgba(255,255,255,.09);
+  border-radius:15px; padding:10px 7px 9px;
+  text-align:center; cursor:pointer;
+  transition:all .22s; position:relative; overflow:hidden;
   animation:cardIn .25s ease;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
 }
 .card::before {
   content:''; position:absolute; inset:0; pointer-events:none;
   background:linear-gradient(160deg,rgba(255,255,255,.04),transparent);
 }
 .card:hover:not(.disabled) {
-  border-color:rgba(255,255,255,.2); transform:translateY(-4px);
-  box-shadow:0 8px 20px rgba(0,0,0,.4);
+  border-color:rgba(255,255,255,.22); transform:translateY(-4px);
+  box-shadow:0 10px 24px rgba(0,0,0,.45);
 }
-.card.disabled { opacity:.3; cursor:not-allowed; }
-
+.card.disabled { opacity:.28; cursor:not-allowed; }
 .genTag {
-  font-family:'Cairo',sans-serif; font-size:10px; font-weight:700;
-  padding:2px 7px; border-radius:8px; display:inline-block; margin-bottom:5px;
+  font-family:'Cairo',sans-serif; font-size:9px; font-weight:700;
+  padding:2px 7px; border-radius:8px;
+  display:inline-block; margin-bottom:5px;
+  letter-spacing:.3px;
 }
 .cardImg {
   width:64px; height:64px; object-fit:contain; display:block; margin:0 auto 5px;
-  image-rendering:pixelated; filter:drop-shadow(0 3px 7px rgba(0,0,0,.6)); transition:transform .25s;
+  image-rendering:pixelated; filter:drop-shadow(0 3px 8px rgba(0,0,0,.6));
+  transition:transform .25s;
 }
-.card:hover:not(.disabled) .cardImg { transform:scale(1.1) translateY(-2px); }
+.card:hover:not(.disabled) .cardImg { transform:scale(1.1) translateY(-3px); }
 .cardName {
   font-family:'Cairo',sans-serif; font-size:12px; font-weight:700;
   color:#fff; display:block; margin-bottom:5px; line-height:1.3;
 }
 .cardTypes { display:flex; gap:3px; justify-content:center; flex-wrap:wrap; margin-bottom:4px; }
-.cardStats {
-  display:flex; gap:5px; justify-content:center; align-items:center;
-  flex-wrap:wrap;
-}
-.hpTag  { font-family:'Cairo',sans-serif; font-size:10px; color:#EF9A9A; }
+.cardStats { display:flex; gap:4px; justify-content:center; align-items:center; flex-wrap:wrap; }
+.hpTag  { font-family:'Cairo',sans-serif; font-size:10px; color:rgba(255,150,150,.8); }
 .bstTag { font-family:'Cairo',sans-serif; font-size:10px; color:rgba(255,214,0,.7); }

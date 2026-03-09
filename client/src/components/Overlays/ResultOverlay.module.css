@@ -1,45 +1,89 @@
+/* ══ ResultOverlay — Win/Lose/Tower result screen ══ */
+
+@keyframes fadeIn  { from{opacity:0} to{opacity:1} }
+@keyframes popIn   { from{transform:scale(.55) translateY(20px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+@keyframes float   { 0%,100%{transform:translateY(0) rotate(-2deg)} 50%{transform:translateY(-8px) rotate(2deg)} }
+
 .overlay {
   position: fixed; inset: 0; z-index: 500;
-  background: rgba(0,0,0,.88); backdrop-filter: blur(12px);
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(16px);
   display: flex; align-items: center; justify-content: center;
-  animation: fadeIn .3s ease;
+  animation: fadeIn .35s ease;
+  padding: 16px;
 }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .box {
-  background: linear-gradient(135deg, #1a1a2e, #16213e);
-  border: 2px solid rgba(255,255,255,.1);
-  border-radius: 28px; padding: 36px 30px;
-  text-align: center; max-width: 340px; width: 90%;
-  animation: popIn .45s cubic-bezier(.34,1.56,.64,1);
+  background: linear-gradient(145deg, rgba(12,20,40,.98), rgba(8,14,28,.98));
+  border-radius: 28px;
+  padding: 38px 32px 32px;
+  text-align: center;
+  max-width: 360px; width: 100%;
+  animation: popIn .48s cubic-bezier(.34,1.56,.64,1);
+  position: relative; overflow: hidden;
+  border: 1.5px solid rgba(255,255,255,.1);
+  box-shadow: 0 24px 80px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.07);
 }
-@keyframes popIn { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* Shimmer top edge */
+.box::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.3) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+}
+
+/* Background glow based on result */
+.box::after {
+  content: '';
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  border-radius: inherit;
+  opacity: .06;
+}
 
 .title {
-  font-family: 'Press Start 2P', monospace; font-size: 14px;
-  margin-bottom: 18px; letter-spacing: 2px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 15px; letter-spacing: 2px;
+  margin-bottom: 20px;
+  line-height: 1.6;
+  position: relative; z-index: 1;
 }
-.win   { color: #FFD600; text-shadow: 0 0 25px rgba(255,214,0,.6); }
-.lose  { color: #EF5350; text-shadow: 0 0 25px rgba(239,83,80,.6); }
-.tower { color: #4FC3F7; text-shadow: 0 0 25px rgba(79,195,247,.6); }
+.win   { color: #FFD600; text-shadow: 0 0 30px rgba(255,214,0,.7); }
+.lose  { color: #EF5350; text-shadow: 0 0 30px rgba(239,83,80,.7); }
+.tower { color: #4FC3F7; text-shadow: 0 0 30px rgba(79,195,247,.7); }
 
-.sprite { margin: 0 auto 18px; }
+.sprite {
+  margin: 0 auto 20px;
+  position: relative; z-index: 1;
+  animation: float 3s ease-in-out infinite;
+}
 
 .stats {
-  display: flex; gap: 20px; justify-content: center;
-  margin: 18px 0 26px;
-  padding: 16px; background: rgba(255,255,255,.04);
-  border-radius: 16px; border: 1px solid rgba(255,255,255,.07);
+  display: flex; gap: 22px; justify-content: center;
+  margin: 18px 0 28px;
+  padding: 16px 20px;
+  background: rgba(255,255,255,.04);
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.08);
+  position: relative; z-index: 1;
 }
 
 .returnBtn {
-  width: 100%; padding: 14px;
-  background: linear-gradient(135deg, rgba(79,195,247,.2), rgba(79,195,247,.08));
-  border: 2px solid rgba(79,195,247,.4); border-radius: 14px;
-  color: #4FC3F7; font-family: 'Press Start 2P', monospace; font-size: 9px;
-  cursor: pointer; transition: all .25s; letter-spacing: 1px;
+  width: 100%; padding: 15px;
+  background: linear-gradient(135deg, rgba(79,195,247,.18), rgba(124,77,255,.12));
+  border: 1.5px solid rgba(79,195,247,.38);
+  border-radius: 16px;
+  color: #4FC3F7;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px; letter-spacing: 1px;
+  cursor: pointer; transition: all .25s;
+  position: relative; z-index: 1;
+  box-shadow: 0 4px 16px rgba(79,195,247,.1);
 }
 .returnBtn:hover {
-  background: rgba(79,195,247,.3); transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(79,195,247,.3);
+  background: linear-gradient(135deg, rgba(79,195,247,.28), rgba(124,77,255,.2));
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(79,195,247,.28);
 }

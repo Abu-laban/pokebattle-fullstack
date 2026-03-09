@@ -1,167 +1,177 @@
-/* ═══ SelectionScreen SCSS-style ═══ */
-@keyframes cardReveal { from{opacity:0;transform:translateY(18px) scale(.97)} to{opacity:1;transform:none} }
-@keyframes genTabIn   { from{opacity:0;transform:scale(.9)} to{opacity:1;transform:scale(1)} }
-@keyframes shimmer    { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
-@keyframes profileIn  { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:none} }
+/* ══ SelectionScreen — Pokemon selection UI ══ */
 
-/* ── Screen ──────────────────────────────────────── */
-.screen { animation:cardReveal .3s ease; }
+@keyframes screenIn  { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+@keyframes cardReveal{ from{opacity:0;transform:translateY(14px) scale(.97)} to{opacity:1;transform:none} }
+@keyframes genTabIn  { from{opacity:0;transform:scale(.9)} to{opacity:1;transform:scale(1)} }
+@keyframes profileIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
 
-/* ── Profile bar ─────────────────────────────────── */
+.screen { animation: screenIn .35s ease; }
+
+/* ── Profile bar ── */
 .profileBar {
-  display:flex; align-items:center; justify-content:space-between;
-  background:rgba(255,255,255,.04); border-radius:14px;
-  padding:10px 16px; margin-bottom:16px;
-  border:1px solid rgba(255,255,255,.07);
-  animation:profileIn .4s ease;
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px; padding: 10px 16px;
+  margin-bottom: 16px; backdrop-filter: blur(10px);
+  animation: profileIn .4s ease;
+  box-shadow: 0 2px 12px rgba(0,0,0,.3);
 }
 .profileLeft  { display:flex; align-items:center; gap:12px; flex:1; }
-.profileRight { font-size:12px; color:rgba(255,255,255,.5); }
+.profileRight { font-size:12px; color:rgba(255,255,255,.45); font-family:'Cairo',sans-serif; }
 .levelBadge {
   font-family:'Press Start 2P',monospace; font-size:10px; color:#FFD600;
-  white-space:nowrap; text-shadow:0 0 12px rgba(255,214,0,.4);
+  white-space:nowrap; text-shadow:0 0 14px rgba(255,214,0,.5);
 }
-.xpBar  { flex:1; height:7px; background:rgba(255,255,255,.08); border-radius:4px; overflow:hidden; }
-.xpFill { height:100%; background:linear-gradient(90deg,#FFD600,#FF6B35); border-radius:4px; transition:width .5s; }
+.xpBar  { flex:1; height:7px; background:rgba(255,255,255,.08); border-radius:4px; overflow:hidden; box-shadow:inset 0 1px 3px rgba(0,0,0,.3); }
+.xpFill { height:100%; background:linear-gradient(90deg,#FFD600,#FF6B35); border-radius:4px; transition:width .6s ease; box-shadow:0 0 8px rgba(255,214,0,.3); }
 
-/* ── Gen tabs ────────────────────────────────────── */
+/* ── Gen tabs ── */
 .genTabs {
-  display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-bottom:18px;
+  display:flex; gap:7px; justify-content:center;
+  flex-wrap:wrap; margin-bottom:18px;
 }
 .genTab {
   position:relative; overflow:hidden; cursor:pointer;
   background:rgba(255,255,255,.04);
-  border:2px solid rgba(255,255,255,.08);
+  border:1.5px solid rgba(255,255,255,.08);
   border-radius:16px; padding:10px 12px;
   display:flex; flex-direction:column; align-items:center; gap:3px;
-  min-width:66px; transition:all .28s cubic-bezier(.34,1.56,.64,1);
+  min-width:66px;
+  transition:all .28s cubic-bezier(.34,1.56,.64,1);
   animation:genTabIn .3s ease;
+  backdrop-filter:blur(8px);
 }
 .genTab::before {
   content:''; position:absolute; inset:0; opacity:0;
   background:linear-gradient(160deg,rgba(255,255,255,.07),transparent);
   transition:opacity .2s;
 }
-.genTab:hover { transform:translateY(-4px) scale(1.04); border-color:rgba(255,255,255,.2); }
+.genTab:hover { transform:translateY(-4px) scale(1.05); border-color:rgba(255,255,255,.2); box-shadow:0 8px 22px rgba(0,0,0,.4); }
 .genTab:hover::before { opacity:1; }
 .genIcon  { font-size:20px; line-height:1; }
-.genLabel {
-  font-family:'Cairo',sans-serif;
-  font-size:13px; font-weight:700; color:rgba(255,255,255,.6); line-height:1.3;
-}
-.genSub   { font-size:11px; color:rgba(255,255,255,.4); font-weight:600; font-family:'Cairo',sans-serif; }
-.genTab.active { transform:translateY(-5px) scale(1.06); }
+.genLabel { font-family:'Cairo',sans-serif; font-size:13px; font-weight:700; color:rgba(255,255,255,.55); line-height:1.3; }
+.genSub   { font-size:11px; color:rgba(255,255,255,.38); font-weight:600; font-family:'Cairo',sans-serif; }
+.genTab.active { transform:translateY(-5px) scale(1.07); box-shadow:0 10px 26px rgba(0,0,0,.45); }
 .genTab.active .genLabel { color:#fff; }
-.genTab.active .genSub   { color:rgba(255,255,255,.65); }
+.genTab.active .genSub   { color:rgba(255,255,255,.6); }
 
-/* Gen backgrounds — each gen has distinct color identity */
-.g-all.active  { background:linear-gradient(145deg,rgba(255,214,0,.18),rgba(255,107,53,.13)); border-color:#FFD60077; box-shadow:0 6px 20px rgba(255,214,0,.15); }
-/* Gen 1 — Kanto — Red/Fire */
-.g-1.active    { background:linear-gradient(145deg,rgba(229,57,53,.2),rgba(255,112,67,.13)); border-color:#E5393577; box-shadow:0 6px 20px rgba(229,57,53,.2); }
-/* Gen 2 — Johto — Gold/Tree */
-.g-2.active    { background:linear-gradient(145deg,rgba(255,179,0,.2),rgba(129,199,132,.13)); border-color:#FFB30077; box-shadow:0 6px 20px rgba(255,179,0,.2); }
-/* Gen 3 — Hoenn — Ocean/Jungle */
-.g-3.active    { background:linear-gradient(145deg,rgba(21,101,192,.2),rgba(56,142,60,.15)); border-color:#1565C077; box-shadow:0 6px 20px rgba(21,101,192,.2); }
-/* Gen 4 — Sinnoh — Diamond/Pearl */
-.g-4.active    { background:linear-gradient(145deg,rgba(57,73,171,.2),rgba(171,71,188,.13)); border-color:#3949AB77; box-shadow:0 6px 20px rgba(57,73,171,.2); }
-/* Gen 5 — Unova — B&W Drama */
-.g-5.active    { background:linear-gradient(145deg,rgba(66,66,66,.3),rgba(239,83,80,.12)); border-color:#42424277; box-shadow:0 6px 20px rgba(66,66,66,.3); }
-/* Gen 6 — Kalos — Fairy/Fashion */
-.g-6.active    { background:linear-gradient(145deg,rgba(236,64,122,.2),rgba(156,39,176,.13)); border-color:#EC407A77; box-shadow:0 6px 20px rgba(236,64,122,.2); }
-/* Gen 7 — Alola — Tropical */
-.g-7.active    { background:linear-gradient(145deg,rgba(255,193,7,.2),rgba(0,172,193,.13)); border-color:#FFC10777; box-shadow:0 6px 20px rgba(255,193,7,.2); }
+/* Gen accent colors */
+.g-all.active  { background:linear-gradient(145deg,rgba(255,214,0,.16),rgba(255,107,53,.11)); border-color:rgba(255,214,0,.5); box-shadow:0 8px 22px rgba(255,214,0,.12); }
+.g-1.active    { background:linear-gradient(145deg,rgba(229,57,53,.18),rgba(255,112,67,.12)); border-color:rgba(229,57,53,.55); box-shadow:0 8px 22px rgba(229,57,53,.15); }
+.g-2.active    { background:linear-gradient(145deg,rgba(255,179,0,.18),rgba(129,199,132,.12)); border-color:rgba(255,179,0,.55); box-shadow:0 8px 22px rgba(255,179,0,.15); }
+.g-3.active    { background:linear-gradient(145deg,rgba(21,101,192,.18),rgba(56,142,60,.14)); border-color:rgba(21,101,192,.55); box-shadow:0 8px 22px rgba(21,101,192,.15); }
+.g-4.active    { background:linear-gradient(145deg,rgba(57,73,171,.18),rgba(171,71,188,.12)); border-color:rgba(57,73,171,.55); box-shadow:0 8px 22px rgba(57,73,171,.15); }
+.g-5.active    { background:linear-gradient(145deg,rgba(70,70,70,.25),rgba(239,83,80,.1)); border-color:rgba(100,100,100,.45); box-shadow:0 8px 22px rgba(60,60,60,.2); }
+.g-6.active    { background:linear-gradient(145deg,rgba(236,64,122,.18),rgba(156,39,176,.12)); border-color:rgba(236,64,122,.55); box-shadow:0 8px 22px rgba(236,64,122,.15); }
+.g-7.active    { background:linear-gradient(145deg,rgba(255,193,7,.18),rgba(0,172,193,.12)); border-color:rgba(255,193,7,.55); box-shadow:0 8px 22px rgba(255,193,7,.12); }
 
-/* ── Search ──────────────────────────────────────── */
-.searchWrap { margin-bottom:11px; }
+/* ── Search ── */
+.searchWrap { margin-bottom:12px; }
 .search {
-  width:100%; padding:11px 16px;
-  background:rgba(255,255,255,.05); border:1.5px solid rgba(255,255,255,.1);
-  border-radius:14px; color:#fff; font-size:14px; outline:none; transition:border .2s;
+  width:100%; padding:12px 18px;
+  background:rgba(255,255,255,.05);
+  border:1.5px solid rgba(255,255,255,.1);
+  border-radius:14px; color:#fff;
+  font-size:14px; outline:none; transition:all .22s;
+  font-family:'Cairo',sans-serif;
+  backdrop-filter:blur(8px);
 }
-.search:focus { border-color:rgba(79,195,247,.5); background:rgba(79,195,247,.03); }
-.search::placeholder { color:rgba(255,255,255,.3); }
+.search:focus { border-color:rgba(79,195,247,.45); background:rgba(79,195,247,.04); box-shadow:0 0 14px rgba(79,195,247,.08); }
+.search::placeholder { color:rgba(255,255,255,.28); }
 
-/* ── Info bar ────────────────────────────────────── */
+/* ── Info bar ── */
 .infoBar {
-  text-align:center; font-size:13px; color:rgba(255,255,255,.45);
-  margin-bottom:12px; min-height:18px;
+  text-align:center; font-size:13px; color:rgba(255,255,255,.4);
+  margin-bottom:12px; min-height:18px; font-family:'Cairo',sans-serif;
 }
 
-/* ── Team bar ────────────────────────────────────── */
+/* ── Team bar ── */
 .teamBar {
-  display:flex; gap:8px; justify-content:center; margin-bottom:16px; flex-wrap:wrap;
+  display:flex; gap:8px; justify-content:center;
+  margin-bottom:16px; flex-wrap:wrap;
 }
 .teamSlot {
-  position:relative; background:rgba(255,255,255,.05);
-  border:1.5px solid rgba(255,255,255,.12); border-radius:14px; padding:7px;
+  position:relative;
+  background:rgba(255,255,255,.05);
+  border:1.5px solid rgba(255,214,0,.25);
+  border-radius:14px; padding:7px;
+  box-shadow:0 0 12px rgba(255,214,0,.06);
 }
 .removeBtn {
-  position:absolute; top:-7px; right:-7px;
+  position:absolute; top:-8px; right:-8px;
   width:20px; height:20px; border-radius:50%;
   background:#EF5350; border:none; color:#fff;
-  font-size:9px; cursor:pointer; display:flex; align-items:center; justify-content:center;
-  transition:transform .2s;
+  font-size:9px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:transform .2s; box-shadow:0 2px 8px rgba(239,83,80,.4);
 }
 .removeBtn:hover { transform:scale(1.2); }
 
-/* ── Actions ─────────────────────────────────────── */
+/* ── Actions ── */
 .actions { display:flex; gap:10px; margin-bottom:18px; }
 .startBtn {
   flex:2; padding:14px; border:none; border-radius:16px;
   background:linear-gradient(135deg,#4FC3F7,#7C4DFF);
-  color:#fff; font-size:13px; font-weight:700; cursor:pointer;
-  transition:all .25s; letter-spacing:.5px;
+  color:#fff; font-size:14px; font-weight:700;
+  cursor:pointer; transition:all .25s; letter-spacing:.5px;
+  font-family:'Cairo',sans-serif;
   box-shadow:0 6px 20px rgba(79,195,247,.25);
 }
-.startBtn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 10px 28px rgba(79,195,247,.4); }
-.startBtn:disabled { opacity:.35; cursor:not-allowed; }
+.startBtn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 12px 30px rgba(79,195,247,.4); }
+.startBtn:disabled { opacity:.3; cursor:not-allowed; }
 .towerBtn {
   flex:1; padding:14px; border-radius:16px;
-  background:rgba(255,214,0,.1); border:1.5px solid rgba(255,214,0,.3);
-  color:#FFD600; font-size:13px; font-weight:700; cursor:pointer; transition:all .25s;
+  background:rgba(255,214,0,.09);
+  border:1.5px solid rgba(255,214,0,.28);
+  color:#FFD600; font-size:14px; font-weight:700;
+  cursor:pointer; transition:all .25s;
+  font-family:'Cairo',sans-serif;
 }
 .towerBtn:hover { background:rgba(255,214,0,.18); transform:translateY(-2px); box-shadow:0 8px 22px rgba(255,214,0,.15); }
 
-/* ── Pokemon grid ────────────────────────────────── */
+/* ── Pokemon grid ── */
 .grid {
-  display:grid; grid-template-columns:repeat(auto-fill,minmax(125px,1fr)); gap:10px;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+  gap:10px;
 }
 .card {
-  background:rgba(255,255,255,.07); border:2px solid rgba(255,255,255,.12);
-  border-radius:18px; padding:13px 8px 10px; text-align:center; cursor:pointer;
+  background:rgba(255,255,255,.05);
+  border:1.5px solid rgba(255,255,255,.09);
+  border-radius:18px; padding:13px 8px 10px;
+  text-align:center; cursor:pointer;
   transition:all .28s cubic-bezier(.34,1.56,.64,1);
   animation:cardReveal .4s cubic-bezier(.34,1.56,.64,1) forwards;
   position:relative; overflow:hidden;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
 }
 .card::before {
   content:''; position:absolute; inset:0; pointer-events:none; opacity:0;
   background:linear-gradient(160deg,rgba(255,255,255,.06),transparent 60%);
   transition:opacity .2s;
 }
-.card:hover { transform:translateY(-5px) scale(1.04); border-color:rgba(255,255,255,.2); }
+.card:hover { transform:translateY(-5px) scale(1.04); border-color:rgba(255,255,255,.22); box-shadow:0 12px 28px rgba(0,0,0,.5); }
 .card:hover::before { opacity:1; }
-.card:hover .cardImg { transform:scale(1.1) translateY(-3px); }
+.card:hover .cardImg { transform:scale(1.12) translateY(-4px); }
 .card.sel {
-  border-color:#FFD600; box-shadow:0 0 22px rgba(255,214,0,.4);
+  border-color:#FFD600;
+  box-shadow:0 0 24px rgba(255,214,0,.35);
   background:rgba(255,214,0,.07);
 }
-.card.disabled { opacity:.35; cursor:not-allowed; }
+.card.disabled { opacity:.3; cursor:not-allowed; }
 
-.cardImg         { width:86px; height:86px; object-fit:contain; display:block; margin:0 auto 6px; image-rendering:pixelated; filter:drop-shadow(0 4px 8px rgba(0,0,0,.6)); transition:transform .3s; }
-.cardImgPlaceholder { width:86px; height:86px; margin:0 auto 6px; border-radius:50%; background:rgba(255,255,255,.04); }
+.cardImg         { width:80px; height:80px; object-fit:contain; display:block; margin:0 auto 7px; image-rendering:pixelated; filter:drop-shadow(0 4px 10px rgba(0,0,0,.6)); transition:transform .3s; }
+.cardImgPlaceholder { width:80px; height:80px; margin:0 auto 7px; border-radius:50%; background:rgba(255,255,255,.04); }
 
-/* Pokemon name — BIGGER and clearer */
 .cardName {
   font-family:'Cairo',sans-serif;
-  font-size:13px; font-weight:700;
-  color:#ffffff; margin-bottom:5px; display:block; line-height:1.3;
-  text-shadow:0 2px 5px rgba(0,0,0,.8);
-  letter-spacing:0.3px;
+  font-size:12px; font-weight:700; color:#fff;
+  margin-bottom:5px; display:block; line-height:1.3;
+  text-shadow:0 1px 4px rgba(0,0,0,.6);
 }
 .cardTypes { display:flex; gap:4px; justify-content:center; flex-wrap:wrap; margin-bottom:5px; }
-.cardMeta  { display:flex; align-items:center; justify-content:center; gap:6px; }
-.classTag  { font-size:12px; line-height:1; }
-.cardHp    { font-size:10px; color:rgba(255,255,255,.6); font-weight:700; font-family:'Cairo',sans-serif; }
+.cardMeta  { display:flex; align-items:center; justify-content:center; gap:5px; }
 .abilityTag{ font-size:12px; line-height:1; }
-
-.bstTag { font-size:10px; color:rgba(255,214,0,.7); font-family:'Cairo',sans-serif; font-weight:700; }
+.cardHp    { font-size:10px; color:rgba(255,255,255,.5); font-weight:700; font-family:'Cairo',sans-serif; }
+.bstTag    { font-size:10px; color:rgba(255,214,0,.7); font-family:'Cairo',sans-serif; font-weight:700; }
