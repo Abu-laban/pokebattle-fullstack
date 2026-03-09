@@ -4,6 +4,7 @@
 @keyframes readyGlow  { 0%,100%{box-shadow:0 0 0 rgba(255,214,0,0)} 50%{box-shadow:0 0 20px rgba(255,214,0,.4)} }
 @keyframes swapPop    { from{opacity:0;transform:scaleY(.88) translateY(-6px)} to{opacity:1;transform:none} }
 @keyframes dotBlink   { 0%,100%{opacity:.2} 50%{opacity:1} }
+@keyframes timerPulse { 0%,100%{opacity:1} 50%{opacity:.65} }
 @keyframes dotAlive   { 0%,100%{transform:scale(1)} 50%{transform:scale(1.3)} }
 
 .screen { display:flex; flex-direction:column; gap:8px; padding-bottom:24px; animation:fadeIn .35s ease; }
@@ -24,9 +25,13 @@
 
 /* Timer */
 .timerWrap { display:flex; align-items:center; gap:8px; }
+.timerLabel { font-size:16px; flex-shrink:0; }
 .timerBar  { flex:1; height:6px; background:rgba(255,255,255,.08); border-radius:4px; overflow:hidden; }
+.timerTrack { flex:1; height:8px; background:rgba(255,255,255,.1); border-radius:5px; overflow:hidden; }
 .timerFill { height:100%; border-radius:4px; }
 .timerNum  { font-family:'Press Start 2P',monospace; font-size:11px; min-width:22px; text-align:center; }
+.timerUrgent .timerNum { animation:timerPulse .5s ease infinite; }
+.timerUrgent .timerTrack { box-shadow:0 0 8px rgba(239,83,80,.4); }
 
 /* Arena */
 .arena {
@@ -71,6 +76,8 @@
 .playerTurn { color:#4FC3F7; background:rgba(79,195,247,.05); border-color:rgba(79,195,247,.25); }
 .enemyTurn  { color:#FF6B35; background:rgba(255,107,53,.05); border-color:rgba(255,107,53,.2); animation:enemyPulse 1.4s ease infinite; }
 .dot { width:5px; height:5px; border-radius:50%; background:currentColor; animation:dotBlink 1.2s ease infinite; }
+.turnDot { width:6px; height:6px; border-radius:50%; background:currentColor; animation:dotBlink 1.2s ease infinite; }
+.turnText { font-family:'Cairo',sans-serif; font-size:14px; font-weight:700; }
 
 /* Swap panel */
 .swapPanel {
@@ -129,12 +136,21 @@
   color:rgba(255,255,255,.3); font-size:14px; cursor:not-allowed;
   transition:all .25s; font-weight:700; font-family:'Cairo',sans-serif;
 }
-.endTurnBtn.ready {
+.endTurnBtn.ready, .endTurnBtn.endReady {
   background:linear-gradient(135deg,rgba(255,214,0,.18),rgba(255,107,53,.13));
   border-color:rgba(255,214,0,.45); color:#FFD600; cursor:pointer;
   animation:readyGlow 1.6s ease infinite;
 }
-.endTurnBtn.ready:hover { transform:translateY(-1px); }
+.endTurnBtn.ready:hover, .endTurnBtn.endReady:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(255,214,0,.2); }
+
+/* Enemy turn state for end button */
+.endEnemyTurn {
+  background:rgba(255,107,53,.05); border-color:rgba(255,107,53,.15);
+  color:rgba(255,107,53,.55); cursor:not-allowed;
+}
+
+/* dualSection wrapper */
+.dualSection { display:flex; flex-direction:column; gap:8px; }
 
 /* Retreat */
 .retreatBtn {
@@ -145,3 +161,6 @@
 }
 .retreatBtn:hover:not(:disabled) { background:rgba(239,83,80,.14); color:#EF5350; }
 .retreatBtn:disabled { opacity:.3; cursor:not-allowed; }
+
+/* Timer urgent state */
+.timerUrgent { animation:timerPulse .6s ease infinite; }

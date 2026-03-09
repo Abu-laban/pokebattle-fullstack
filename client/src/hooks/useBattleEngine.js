@@ -61,8 +61,10 @@ export function useBattleEngine() {
       if (eff.weather) {
         // Weather moves: just apply weather, no target needed
       } else if (eff.target === 'foe') {
-        const targetFieldPos = s.pendingTargets[fieldPos] ?? 0;
-        target = eField.memberAt(targetFieldPos) || eField.activeMembers[0];
+        const storedPos = s.pendingTargets[fieldPos];
+        target = (storedPos !== null && storedPos !== undefined)
+          ? (eField.memberAt(storedPos) || eField.activeMembers[0])
+          : eField.activeMembers[0];
         if (!target || !target.isAlive) { callback?.(); return; }
       }
       StatusEngine.applyMoveEffect(mv.n, attacker, target, log, (type) => store.setWeather(type));
@@ -72,8 +74,15 @@ export function useBattleEngine() {
     }
 
     // ── Offensive attack ──────────────────────────────────────────────────────
-    const targetFieldPos = s.pendingTargets[fieldPos] ?? 0;
-    const target = eField.memberAt(targetFieldPos);
+    // Smart target resolution: use stored target, but if null/dead → first alive enemy
+    const storedTargetPos = s.pendingTargets[fieldPos];
+    let target = storedTargetPos !== null && storedTargetPos !== undefined
+      ? eField.memberAt(storedTargetPos)
+      : null;
+    // If target is dead or not set, auto-target first alive enemy
+    if (!target || !target.isAlive) {
+      target = eField.activeMembers[0] ?? null;
+    }
     if (!target || !target.isAlive) { callback?.(); return; }
 
     playTypeSound(mv.t);

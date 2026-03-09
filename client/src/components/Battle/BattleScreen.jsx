@@ -1,6 +1,11 @@
 // ══════════════════════════════════════════
-// BattleScreen — Complete battle UI
-// Fixes: swap costs turn, smart target, timer, no class badges
+// BattleScreen — Complete 2v2 + Tower Battle UI
+// FIXES:
+//   1. Auto-target uses FIELD POSITIONS (not team indices)
+//   2. Timer fully visible
+//   3. Turn bar fully visible
+//   4. End turn button always visible
+//   5. All UI elements robust
 // ══════════════════════════════════════════
 import { useCallback, useState, useEffect, useRef } from 'react';
 import { useBattleStore }   from '../../store/battleStore.js';
@@ -21,16 +26,22 @@ export function BattleScreen() {
   return <><BattleMain /><ResultOverlay /></>;
 }
 
-// ── Determine if a move needs target selection ────────────────────────────────
+// ── Does a move need explicit target selection? ────────────────────────────────
 function moveNeedsTarget(mv, aliveEnemyCount) {
   if (!mv) return false;
-  // Self / weather moves: never need target picker
   const eff = MOVE_EFFECTS[mv.n];
+  // Self-buff or weather: no target needed ever
   if (eff && (eff.target === 'self' || eff.weather)) return false;
-  // Foe status moves: only need picker if 2 enemies
-  if (eff && eff.target === 'foe') return aliveEnemyCount > 1;
-  // Normal offensive: need picker only if 2 enemies
+  // Any other move: needs picker only when 2+ live enemies
   return aliveEnemyCount > 1;
+}
+
+// ── Get alive FIELD POSITIONS of enemies (not team indices!) ──────────────────
+function getAliveEnemyFieldPositions(eField, enTeam) {
+  return eField
+    .map((teamIdx, fieldPos) => ({ teamIdx, fieldPos }))
+    .filter(({ teamIdx }) => teamIdx !== null && teamIdx !== undefined && !enTeam[teamIdx]?.fainted)
+    .map(({ fieldPos }) => fieldPos);
 }
 
 function BattleMain() {
@@ -44,134 +55,136 @@ function BattleMain() {
   const towerStreak  = useBattleStore(s => s.towerStreak);
   const pendingMoves = useBattleStore(s => s.pendingMoves);
   const pendingSwaps = useBattleStore(s => s.pendingSwaps);
-  const turnTimer    = useBattleStore(s => s.turnTimer);
   const resetGame    = useBattleStore(s => s.resetGame);
 
   const { executeDualTurn, executeTowerTurn, executeTowerSwap } = useBattleEngine();
-  const [swapFor, setSwapFor]     = useState(null);  // fieldPos | null
-  const [targetFor, setTargetFor] = useState(null);  // {fieldPos, moveIdx} | null
+
+  // Local state
+  const [swapFor, setSwapFor]     = useState(null);
+  const [targetFor, setTargetFor] = useState(null);
+  const [timer, setTimer]         = useState(30);
   const timerRef = useRef(null);
 
-  // ── Turn timer ─────────────────────────────────────────────────────────────
+  // ── Turn timer (local state for reliable display) ──────────────────────────
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);
-    if (!active || !pTurn) return;
+    if (!active || !pTurn) { setTimer(30); return; }
 
-    useBattleStore.getState().setTurnTimer(30);
+    setTimer(30);
     timerRef.current = setInterval(() => {
-      const cur = useBattleStore.getState().turnTimer;
-      if (cur <= 1) {
-        clearInterval(timerRef.current);
-        // Time out: auto-execute with random moves
-        const st = useBattleStore.getState();
-        if (st.towerActive) {
-          const m = st.myTeam[st.pField[0] ?? 0];
-          if (m && m.poke?.moves?.length) {
-            const rnd = Math.floor(Math.random() * m.poke.moves.length);
-            executeTowerTurn(rnd);
+      setTimer(prev => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          // Auto-execute on timeout
+          const st = useBattleStore.getState();
+          if (st.towerActive) {
+            const m = st.myTeam[st.pField[0] ?? 0];
+            if (m?.poke?.moves?.length) executeTowerTurn(Math.floor(Math.random() * m.poke.moves.length));
+          } else {
+            [0, 1].forEach(fi => {
+              const idx = st.pField[fi];
+              if (idx === null) return;
+              const mem = st.myTeam[idx];
+              if (!mem || mem.fainted) return;
+              if (st.pendingMoves[fi] === null && st.pendingSwaps[fi] === null) {
+                const alive = getAliveEnemyFieldPositions(st.eField, st.enTeam);
+                st.setPendingMove(fi, 0);
+                st.setPendingTarget(fi, alive[0] ?? 0);
+              }
+            });
+            executeDualTurn();
           }
-        } else {
-          // Fill any un-chosen slots with random moves
-          [0,1].forEach(fi => {
-            const idx = st.pField[fi];
-            if (idx === null) return;
-            const mem = st.myTeam[idx];
-            if (!mem || mem.fainted) return;
-            if (st.pendingMoves[fi] === null && st.pendingSwaps[fi] === null) {
-              const rnd = Math.floor(Math.random() * mem.poke.moves.length);
-              useBattleStore.getState().setPendingMove(fi, rnd);
-              useBattleStore.getState().setPendingTarget(fi, 0);
-            }
-          });
-          executeDualTurn();
+          return 30;
         }
-      } else {
-        useBattleStore.getState().setTurnTimer(cur - 1);
-      }
+        return prev - 1;
+      });
     }, 1000);
-
     return () => clearInterval(timerRef.current);
   }, [pTurn, active]);
 
-  // ── Bench: alive members NOT on field ─────────────────────────────────────
+  // ── Bench (alive team members NOT on field) ────────────────────────────────
   const fieldSet     = new Set(pField.filter(i => i !== null));
   const benchMembers = myTeam
     .map((m, i) => ({ ...m, teamIdx: i }))
     .filter(m => !m.fainted && !fieldSet.has(m.teamIdx));
 
-  // ── 2v2 ready: each slot must have EITHER a move OR a swap pending ─────────
+  // ── 2v2: both active slots must have an action ─────────────────────────────
   const slotReady = (fi) => {
     const idx = pField[fi];
     if (idx === null) return true;
-    const m = myTeam[idx];
-    if (!m || m.fainted) return true;
+    if (!myTeam[idx] || myTeam[idx].fainted) return true;
     return pendingMoves[fi] !== null || pendingSwaps[fi] !== null;
   };
-  const allReady = !towerActive &&
-    slotReady(0) && slotReady(1) &&
-    (pendingMoves.some(m => m !== null) || pendingSwaps.some(s => s !== null));
+  const allReady = !towerActive && pTurn && active
+    && slotReady(0) && slotReady(1)
+    && (pendingMoves.some(m => m !== null) || pendingSwaps.some(s => s !== null));
 
-  // ── Swap from BattleScreen (for 2v2: registers pending swap, not immediate) ─
-  const handleSwapCommit = useCallback((fieldPos, benchTeamIdx) => {
-    // Clear any move chosen for this slot; register swap action
-    useBattleStore.getState().setPendingMove(fieldPos, null);
-    useBattleStore.getState().setPendingTarget(fieldPos, null);
-    useBattleStore.getState().setPendingSwap(fieldPos, benchTeamIdx);
-    setSwapFor(null);
-  }, []);
-
-  // ── Tower swap ──────────────────────────────────────────────────────────────
-  const handleTowerSwapCommit = useCallback((benchTeamIdx) => {
-    setSwapFor(null);
-    executeTowerSwap(benchTeamIdx);
-  }, [executeTowerSwap]);
-
-  // ── Tower move ──────────────────────────────────────────────────────────────
-  const handleTowerMove = useCallback((moveIdx) => {
-    if (!pTurn || !active) return;
-    executeTowerTurn(moveIdx);
-  }, [pTurn, active, executeTowerTurn]);
-
-  // ── 2v2 move chosen: check if target needed ─────────────────────────────────
+  // ── Move chosen in 2v2 panel ───────────────────────────────────────────────
   const handleMoveChosen = useCallback((fieldPos, moveIdx) => {
     const st = useBattleStore.getState();
     const mem = st.myTeam[st.pField[fieldPos]];
     const mv  = mem?.poke?.moves?.[moveIdx];
-    const aliveEnemies = eField.filter(i => i !== null && !enTeam[i]?.fainted);
 
-    if (moveNeedsTarget(mv, aliveEnemies.length)) {
+    // ★ FIX: use field positions, not team indices
+    const aliveFieldPos = getAliveEnemyFieldPositions(st.eField, st.enTeam);
+
+    if (moveNeedsTarget(mv, aliveFieldPos.length)) {
       setTargetFor({ fieldPos, moveIdx });
     } else {
-      // Auto-target first alive enemy (or self doesn't matter)
-      const autoTarget = aliveEnemies[0] ?? 0;
-      useBattleStore.getState().setPendingMove(fieldPos, moveIdx);
-      useBattleStore.getState().setPendingTarget(fieldPos, autoTarget);
-      // Clear any pending swap for this slot
-      useBattleStore.getState().setPendingSwap(fieldPos, null);
+      // Auto-target: first alive enemy FIELD POSITION
+      const autoTarget = aliveFieldPos[0] ?? 0;
+      st.setPendingMove(fieldPos, moveIdx);
+      st.setPendingTarget(fieldPos, autoTarget);
+      st.setPendingSwap(fieldPos, null);
     }
-  }, [eField, enTeam]);
+  }, []);
 
+  // ── Target chosen in target-picker mode ───────────────────────────────────
   const handleTargetChosen = useCallback((enemyFieldPos) => {
     if (!targetFor) return;
-    useBattleStore.getState().setPendingMove(targetFor.fieldPos, targetFor.moveIdx);
-    useBattleStore.getState().setPendingTarget(targetFor.fieldPos, enemyFieldPos);
-    useBattleStore.getState().setPendingSwap(targetFor.fieldPos, null);
+    const st = useBattleStore.getState();
+    st.setPendingMove(targetFor.fieldPos, targetFor.moveIdx);
+    st.setPendingTarget(targetFor.fieldPos, enemyFieldPos);
+    st.setPendingSwap(targetFor.fieldPos, null);
     setTargetFor(null);
   }, [targetFor]);
 
-  // ── Pending swap cancel (if player clicks swap again) ──────────────────────
-  const handleCancelSwap = useCallback((fieldPos) => {
-    useBattleStore.getState().clearPendingSlot(fieldPos);
+  // ── Swap commit (2v2: register as pending action) ─────────────────────────
+  const handleSwapCommit = useCallback((fieldPos, benchIdx) => {
+    const st = useBattleStore.getState();
+    st.setPendingMove(fieldPos, null);
+    st.setPendingTarget(fieldPos, null);
+    st.setPendingSwap(fieldPos, benchIdx);
+    setSwapFor(null);
+  }, []);
+
+  // ── Tower swap commit ──────────────────────────────────────────────────────
+  const handleTowerSwapCommit = useCallback((benchIdx) => {
+    setSwapFor(null);
+    executeTowerSwap(benchIdx);
+  }, [executeTowerSwap]);
+
+  // ── Cancel pending action for a slot ──────────────────────────────────────
+  const handleCancelSlot = useCallback((fi) => {
+    useBattleStore.getState().clearPendingSlot(fi);
   }, []);
 
   const activeMember = towerActive ? myTeam[pField[0] ?? 0] : null;
-  const timerPct     = (turnTimer / 30) * 100;
-  const timerColor   = turnTimer > 10 ? '#66BB6A' : turnTimer > 5 ? '#FFD600' : '#EF5350';
+  const timerPct    = (timer / 30) * 100;
+  const timerColor  = timer > 15 ? '#66BB6A' : timer > 7 ? '#FFD600' : '#EF5350';
+  const timerUrgent = timer <= 7;
+
+  // Build turn status text
+  let turnText = '⚔ دورك — اختر حركاتك!';
+  if (!pTurn) turnText = '⌛ دور العدو...';
+  else if (targetFor) turnText = `🎯 اختر هدفاً لـ ${myTeam[pField[targetFor.fieldPos]]?.poke?.name}`;
+  else if (swapFor !== null) turnText = `🔄 اختر البديل لـ ${myTeam[pField[swapFor]]?.poke?.name}`;
+  else if (allReady) turnText = '✅ جاهز! اضغط "تنفيذ الدور"';
 
   return (
     <div className={styles.screen}>
 
-      {/* Tower header */}
+      {/* ── TOWER HEADER ── */}
       {towerActive && (
         <div className={styles.towerBar}>
           <span className={styles.towerTitle}>🏰 برج المعارك</span>
@@ -187,21 +200,28 @@ function BattleMain() {
         </div>
       )}
 
-      {/* Turn timer bar */}
-      {active && (
-        <div className={styles.timerWrap}>
-          <div className={styles.timerBar}>
-            <div className={styles.timerFill}
-              style={{ width: timerPct + '%', background: timerColor, transition: 'width 1s linear, background .3s' }} />
-          </div>
-          <span className={styles.timerNum} style={{ color: timerColor }}>{turnTimer}</span>
+      {/* ── TIMER ── */}
+      <div className={`${styles.timerWrap} ${timerUrgent ? styles.timerUrgent : ''}`}>
+        <span className={styles.timerLabel}>⏱</span>
+        <div className={styles.timerTrack}>
+          <div
+            className={styles.timerFill}
+            style={{
+              width: timerPct + '%',
+              background: timerColor,
+              transition: 'width 1s linear, background 0.5s',
+            }}
+          />
         </div>
-      )}
+        <span className={styles.timerNum} style={{ color: timerColor }}>
+          {timer}
+        </span>
+      </div>
 
-      {/* Weather */}
+      {/* ── WEATHER BAR ── */}
       <WeatherBar />
 
-      {/* Arena */}
+      {/* ── ARENA ── */}
       <div className={styles.arena}>
         <div className={styles.arenaGlow} />
         <div className={styles.fighters}>
@@ -211,10 +231,10 @@ function BattleMain() {
             <div className={styles.sideLabel}>🎮 فريقك</div>
             <FighterCard
               member={pField[0] !== null ? myTeam[pField[0]] : null}
-              isPlayer fieldPos={0} isActive={pTurn}
+              isPlayer fieldPos={0} isActive={pTurn && !towerActive}
               pendingSwap={pendingSwaps[0] !== null ? myTeam[pendingSwaps[0]]?.poke?.name : null}
               onSwap={pTurn && active && !towerActive ? () => setSwapFor(0) : null}
-              onCancelSwap={pendingSwaps[0] !== null ? () => handleCancelSwap(0) : null}
+              onCancelSwap={pendingSwaps[0] !== null ? () => handleCancelSlot(0) : null}
             />
             {!towerActive && (
               <FighterCard
@@ -222,7 +242,7 @@ function BattleMain() {
                 isPlayer fieldPos={1} isActive={pTurn}
                 pendingSwap={pendingSwaps[1] !== null ? myTeam[pendingSwaps[1]]?.poke?.name : null}
                 onSwap={pTurn && active ? () => setSwapFor(1) : null}
-                onCancelSwap={pendingSwaps[1] !== null ? () => handleCancelSwap(1) : null}
+                onCancelSwap={pendingSwaps[1] !== null ? () => handleCancelSlot(1) : null}
               />
             )}
           </div>
@@ -251,16 +271,11 @@ function BattleMain() {
         </div>
       </div>
 
-      {/* Turn indicator */}
+      {/* ── TURN STATUS BAR (always visible) ── */}
       <div className={`${styles.turnBar} ${pTurn ? styles.playerTurn : styles.enemyTurn}`}>
-        <span className={styles.dot} />
-        <span>
-          {!pTurn ? '⌛ دور العدو...' :
-           targetFor ? `🎯 اختر هدف ${myTeam[pField[targetFor?.fieldPos]]?.poke?.name}` :
-           swapFor !== null ? `🔄 اختر بديل ${myTeam[pField[swapFor]]?.poke?.name}` :
-           '⚔ دورك!'}
-        </span>
-        <span className={styles.dot} />
+        <span className={styles.turnDot} />
+        <span className={styles.turnText}>{turnText}</span>
+        <span className={styles.turnDot} />
       </div>
 
       {/* ── SWAP PANEL ── */}
@@ -293,7 +308,7 @@ function BattleMain() {
           <MoveGrid
             moves={activeMember.poke.moves}
             ult={activeMember.ult}
-            onSelect={handleTowerMove}
+            onSelect={(mi) => { if (pTurn && active) executeTowerTurn(mi); }}
             disabled={!pTurn || !active}
           />
           {benchMembers.length > 0 && pTurn && active && (
@@ -305,33 +320,50 @@ function BattleMain() {
         </div>
       )}
 
-      {/* ── 2v2: dual panels ── */}
+      {/* ── 2v2: move panels ── */}
       {!towerActive && !swapFor && !targetFor && (
-        <>
+        <div className={styles.dualSection}>
           <div className={styles.dualPanels}>
-            <DualMovePanel fieldPos={0} onMoveChosen={handleMoveChosen} onSwapRequest={() => setSwapFor(0)} />
-            <DualMovePanel fieldPos={1} onMoveChosen={handleMoveChosen} onSwapRequest={() => setSwapFor(1)} />
+            <DualMovePanel
+              fieldPos={0}
+              onMoveChosen={handleMoveChosen}
+              onSwapRequest={pTurn && active ? () => setSwapFor(0) : null}
+            />
+            <DualMovePanel
+              fieldPos={1}
+              onMoveChosen={handleMoveChosen}
+              onSwapRequest={pTurn && active ? () => setSwapFor(1) : null}
+            />
           </div>
+
+          {/* ── END TURN BUTTON (always rendered) ── */}
           <button
-            className={`${styles.endTurnBtn} ${allReady ? styles.ready : ''}`}
-            disabled={!allReady || !pTurn || !active}
-            onClick={executeDualTurn}
+            className={`${styles.endTurnBtn} ${allReady ? styles.endReady : ''} ${!pTurn ? styles.endEnemyTurn : ''}`}
+            disabled={!allReady}
+            onClick={allReady ? executeDualTurn : undefined}
           >
-            ⚔ تنفيذ الدور
+            {!pTurn
+              ? '⌛ دور العدو...'
+              : allReady
+                ? '⚔ تنفيذ الدور!'
+                : '⚔ اختر حركاتك أولاً'
+            }
           </button>
-        </>
+        </div>
       )}
 
-      <button className={styles.retreatBtn} onClick={resetGame} disabled={!active}>
+      {/* ── RETREAT ── */}
+      <button className={styles.retreatBtn} onClick={resetGame}>
         🏳 انسحاب
       </button>
 
+      {/* ── LOG ── */}
       <BattleLog />
     </div>
   );
 }
 
-// ── Bench card ────────────────────────────────────────────────────────────────
+// ── Bench mini-card ────────────────────────────────────────────────────────────
 function BenchCard({ member, onClick }) {
   const imgRef = useRef(null);
   useEffect(() => {
@@ -339,13 +371,12 @@ function BenchCard({ member, onClick }) {
       loadSpriteWithFallback(imgRef.current, member.poke.id, member.poke.name);
   }, [member?.poke?.id]);
 
-  const hpPct  = member.poke ? Math.round(member.hp / member.poke.hp * 100) : 0;
-  const hpClr  = hpPct > 50 ? '#66BB6A' : hpPct > 25 ? '#FFD600' : '#EF5350';
+  const hpPct = member.poke ? Math.round(member.hp / member.poke.hp * 100) : 0;
+  const hpClr = hpPct > 50 ? '#66BB6A' : hpPct > 25 ? '#FFD600' : '#EF5350';
 
   return (
     <button className={styles.benchCard} onClick={onClick}>
-      <img ref={imgRef} alt={member.poke?.name}
-        className={styles.benchImg} />
+      <img ref={imgRef} alt={member.poke?.name} className={styles.benchImg} />
       <span className={styles.benchName}>{member.poke?.name}</span>
       <div className={styles.benchHpBar}>
         <div style={{ width: hpPct + '%', background: hpClr, height: '100%', borderRadius: 3 }} />
