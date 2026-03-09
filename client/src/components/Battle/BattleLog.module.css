@@ -1,75 +1,96 @@
 /* ═══════════════════════════════════════
-   BattleLog.module.css
+   BattleLog.module.css — Battle feed
    ═══════════════════════════════════════ */
 
 @keyframes logIn    { from{opacity:0;transform:translateX(-5px)} to{opacity:1;transform:none} }
-@keyframes flashRow { from{background:rgba(255,255,255,.08)} to{background:transparent} }
+@keyframes flashRow { 0%{background:rgba(255,255,255,.1)} 100%{background:transparent} }
 
 /* ── Container ── */
 .log {
-  background: linear-gradient(170deg, rgba(4,8,18,.92), rgba(2,5,12,.96));
-  border: 1px solid rgba(255,255,255,.09);
+  background: linear-gradient(160deg, rgba(6,11,22,.93), rgba(3,7,16,.96));
+  border: 1px solid rgba(255,255,255,.1);
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.04);
+  box-shadow: 0 4px 18px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.05);
 }
 
 /* ── Header ── */
 .logHeader {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 13px 7px;
-  border-bottom: 1px solid rgba(255,255,255,.06);
-  background: rgba(255,255,255,.025);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px 7px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  background: rgba(255,255,255,.03);
 }
 .logTitle {
   font-family: 'Cairo', sans-serif;
   font-size: 12px; font-weight: 700;
-  color: rgba(255,255,255,.38);
+  color: rgba(255,255,255,.45);
   letter-spacing: .5px;
 }
 .logCount {
   font-family: 'Press Start 2P', monospace;
-  font-size: 9px; color: rgba(255,255,255,.2);
-  background: rgba(255,255,255,.05);
-  padding: 2px 7px; border-radius: 5px;
+  font-size: 9px; color: rgba(255,255,255,.3);
+  background: rgba(255,255,255,.06);
+  padding: 2px 8px; border-radius: 5px;
+  min-width: 28px; text-align: center;
 }
 
 /* ── Scrollable area ── */
 .entries {
-  padding: 7px 6px 8px 10px;
-  max-height: 148px;
+  padding: 7px 6px 8px 12px;
+  max-height: 160px;
+  min-height: 60px;
   overflow-y: auto;
-  display: flex; flex-direction: column; gap: 1px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,.1) transparent;
+  scrollbar-color: rgba(255,255,255,.12) transparent;
 }
-.entries::-webkit-scrollbar       { width: 3px; }
+.entries::-webkit-scrollbar       { width: 4px; }
 .entries::-webkit-scrollbar-track { background: transparent; }
-.entries::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 2px; }
+.entries::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 2px; }
 
 /* ── Single entry ── */
 .entry {
-  display: flex; align-items: baseline; gap: 6px;
-  padding: 3px 7px;
-  border-radius: 6px;
-  animation: logIn .18s ease, flashRow .5s ease;
-  line-height: 1.5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  animation: logIn .18s ease both, flashRow .6s ease both;
+  line-height: 1.4;
+  min-height: 28px;
 }
-.entryIcon { font-size: 11px; flex-shrink: 0; line-height: 1.6; opacity: .75; }
-.entryText { font-family: 'Cairo', sans-serif; font-size: 13px; line-height: 1.5; flex: 1; }
+.entryIcon {
+  font-size: 13px;
+  flex-shrink: 0;
+  line-height: 1;
+  width: 20px;
+  text-align: center;
+}
+.entryText {
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  flex: 1;
+  color: rgba(255,255,255,.7);
+}
 
-/* ── Entry types (camelCase to match JS cls values) ── */
-.sys .entryText  { font-size: 12px; color: rgba(255,255,255,.38); }
-.sys .entryIcon  { opacity: .35; }
+/* ── Entry types ── */
+.sys .entryText  { font-size: 12px; color: rgba(255,255,255,.4); }
+.sys .entryIcon  { opacity: .4; }
 
-.playerAtk .entryText { color: #81C784; font-weight: 700; }
-.playerAtk { background: rgba(102,187,106,.05); }
+.playerAtk { background: rgba(102,187,106,.08); border-right: 2px solid rgba(102,187,106,.4); }
+.playerAtk .entryText { color: #A5D6A7; font-weight: 700; }
 
+.enemyAtk  { background: rgba(239,83,80,.07); border-right: 2px solid rgba(239,83,80,.4); }
 .enemyAtk .entryText  { color: #EF9A9A; font-weight: 700; }
-.enemyAtk  { background: rgba(239,83,80,.05); }
 
+.death { background: rgba(255,112,67,.08); border-right: 2px solid rgba(255,112,67,.5); }
 .death .entryText { color: #FFAB76; font-weight: 700; }
-.death  { background: rgba(255,107,53,.05); }
 
+.heal { background: rgba(128,222,234,.07); border-right: 2px solid rgba(128,222,234,.4); }
 .heal .entryText { color: #80DEEA; font-weight: 600; }
-.heal  { background: rgba(128,222,234,.04); }

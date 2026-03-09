@@ -18,7 +18,7 @@
   flex-direction: column;
   gap: 8px;
   padding-bottom: 24px;
-  animation: fadeUp .3s ease;
+  animation: fadeUp .3s ease both;
 }
 
 /* ══════════════ TOWER BAR ══════════════ */
@@ -146,7 +146,7 @@
   border: 1.5px solid rgba(255,214,0,.28);
   border-radius: 18px;
   padding: 14px;
-  animation: swapSlide .25s cubic-bezier(.34,1.56,.64,1);
+  animation: swapSlide .25s cubic-bezier(.34,1.56,.64,1) both;
   backdrop-filter: blur(20px);
   box-shadow: 0 8px 32px rgba(0,0,0,.5);
 }
