@@ -2,7 +2,7 @@
 // useBattleEngine — Full battle logic
 // ══════════════════════════════════════════
 import { useCallback } from 'react';
-import { useBattleStore }   from '../store/battleStore.js';
+import { useBattleStore, emitBattleAnim } from '../store/battleStore.js';
 import { useProgressStore } from '../store/progressStore.js';
 import { BattleMember }     from '../engine/BattleMember.js';
 import { BattleField }      from '../engine/BattleField.js';
@@ -114,9 +114,9 @@ export function useBattleEngine() {
     else if (cat === 'special') target._lastSpecDmgReceived = dmg;
     target.dealDamage(dmg);
     if (mv.u) attacker.consumeUlt(); else attacker.chargeUlt(20);
-    // Get target field position for animation
-    const tFieldPos = s.eField.indexOf(s.eField.find((ti, fi) => s.enTeam[ti] === target.poke ? fi : -1));
-    emitBattleAnim(mult >= 2 ? 'superEff' : 'hit', s.eField.findIndex(ti => ti !== null && s.enTeam[ti]?.poke?.name === target.poke.name), true);
+    // Emit animation for target sprite
+    const hitFieldPos = s.eField.findIndex(ti => ti !== null && s.enTeam[ti]?.poke?.name === target.poke.name);
+    if (hitFieldPos >= 0) emitBattleAnim(mult >= 2 ? 'superEff' : 'hit', hitFieldPos, true);
 
     const effTxt = mult === 0 ? ' مناعة!' : mult >= 2 ? ' فعّال جداً! 🔥' : mult <= 0.5 ? ' غير فعّال...' : '';
     log('⚔ ' + attacker.poke.name + ' → ' + target.poke.name + ': ' + mv.n + ' (-' + dmg + ' HP)' + effTxt + (stab > 1 ? ' [STAB]' : ''), 'playerAtk');
@@ -177,6 +177,7 @@ export function useBattleEngine() {
     }
 
     playTypeSound(mv.t);
+    emitBattleAnim('attack', fieldPos, true);
     if (mv.t === 'FIRE' && target.hasStatus('FRZ')) target.removeStatus('FRZ');
 
     const { dmg, mult, absorbed } = DamageEngine.calc(mv, attacker, target, weather);
@@ -191,6 +192,8 @@ export function useBattleEngine() {
     else if (cat === 'special') target._lastSpecDmgReceived = dmg;
     target.dealDamage(dmg);
     if (mv.u) attacker.consumeUlt(); else attacker.chargeUlt(20);
+    const playerHitPos = s.pField.findIndex(ti => ti !== null && s.myTeam[ti]?.poke?.name === target.poke.name);
+    if (playerHitPos >= 0) emitBattleAnim(mult >= 2 ? 'superEff' : 'hit', playerHitPos, false);
 
     const effTxt = mult >= 2 ? ' فعّال جداً! 🔥' : mult <= 0.5 ? ' غير فعّال...' : '';
     log('💥 ' + attacker.poke.name + ' → ' + target.poke.name + ': ' + mv.n + ' (-' + dmg + ' HP)' + effTxt, 'enemyAtk');

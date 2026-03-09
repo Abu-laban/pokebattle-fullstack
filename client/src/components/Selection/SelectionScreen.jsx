@@ -145,11 +145,22 @@ export function SelectionScreen() {
         </button>
       </div>
 
+      {/* Pokeball throw animation */}
+      {throwAnim && (
+        <div
+          key={throwAnim.key}
+          className={styles.pokeballThrow}
+          style={{ '--bx': throwAnim.x + 'px', '--by': throwAnim.y + 'px' }}
+        >
+          ⚾
+        </div>
+      )}
+
       {/* Poke grid */}
       <PokeGrid
         pokes={filtered}
         selectedIds={selectedIds}
-        onSelect={togglePoke}
+        onSelect={handleSelectPoke}
       />
     </div>
   );

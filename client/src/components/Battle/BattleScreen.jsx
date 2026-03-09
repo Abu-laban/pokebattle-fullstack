@@ -3,7 +3,7 @@
 // All buttons always visible and functional
 // ══════════════════════════════════════════
 import { useCallback, useState, useEffect, useRef } from 'react';
-import { useBattleStore }   from '../../store/battleStore.js';
+import { useBattleStore, subscribeBattleAnim } from '../../store/battleStore.js';
 import { useBattleEngine }  from '../../hooks/useBattleEngine.js';
 import { MOVE_EFFECTS }     from '../../data/moveEffects.js';
 import { FighterCard }      from './FighterCard.jsx';
@@ -12,7 +12,6 @@ import { BattleLog }        from './BattleLog.jsx';
 import { MoveGrid }         from './MoveGrid.jsx';
 import { DualMovePanel }    from './DualMovePanel.jsx';
 import { ResultOverlay }    from '../Overlays/ResultOverlay.jsx';
-import { subscribeBattleAnim } from '../../store/battleStore.js';
 import { loadSpriteWithFallback } from '../../engine/sprites.js';
 import styles from './BattleScreen.module.css';
 
