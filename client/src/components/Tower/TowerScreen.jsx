@@ -36,6 +36,7 @@ export function TowerScreen() {
   const addTowerPoke = useBattleStore(s => s.addTowerPoke);
   const removePoke   = useBattleStore(s => s.removeTowerPoke);
   const startTower   = useBattleStore(s => s.startTower);
+  const selectRandomTowerTeam = useBattleStore(s => s.selectRandomTowerTeam);
   const setScreen    = useBattleStore(s => s.setScreen);
   const [search, setSearch] = useState('');
   const [genFilter, setGenFilter] = useState('all');
@@ -53,7 +54,7 @@ export function TowerScreen() {
     });
   }, [towerTeam, search, genFilter]);
 
-  const canStart = towerTeam.length >= 1;
+  const canStart = towerTeam.length >= 6;
 
   return (
     <div className={styles.screen}>
@@ -75,10 +76,26 @@ export function TowerScreen() {
         ))}
       </div>
 
-      {/* Start button */}
-      <button className={styles.startBtn} disabled={!canStart} onClick={startTower}>
-        🏰 ادخل البرج <span className={styles.counter}>({towerTeam.length}/6)</span>
-      </button>
+      {/* Action buttons */}
+      <div className={styles.actions}>
+        <button
+          className={styles.randomBtn}
+          onClick={selectRandomTowerTeam}
+        >
+          <div style={{marginBottom: '8px'}}>اختر فريق عشوائي</div>
+          <div style={{display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap'}}>
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" alt="Poké Ball" style={{width: '20px', height: '20px'}} />
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png" alt="Great Ball" style={{width: '20px', height: '20px'}} />
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png" alt="Ultra Ball" style={{width: '20px', height: '20px'}} />
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png" alt="Master Ball" style={{width: '20px', height: '20px'}} />
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/dive-ball.png" alt="Dive Ball" style={{width: '20px', height: '20px'}} />
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/premier-ball.png" alt="Premier Ball" style={{width: '20px', height: '20px'}} />
+          </div>
+        </button>
+        <button className={styles.startBtn} disabled={!canStart} onClick={startTower}>
+          🏰 ادخل البرج <span className={styles.counter}>({towerTeam.length}/6)</span>
+        </button>
+      </div>
 
       {/* Filters */}
       <div className={styles.filterRow}>

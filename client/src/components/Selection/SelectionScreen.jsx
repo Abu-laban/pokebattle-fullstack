@@ -47,21 +47,17 @@ export function SelectionScreen() {
   const removePoke  = useBattleStore(s => s.removeFromTeam);
   const setGen      = useBattleStore(s => s.setGen);
   const startBattle = useBattleStore(s => s.startBattle);
+  const selectRandomTeam = useBattleStore(s => s.selectRandomTeam);
   const setScreen   = useBattleStore(s => s.setScreen);
   const level       = useProgressStore(s => s.level);
   const xp          = useProgressStore(s => s.xp);
+  const xpPercent   = useProgressStore(s => s.xpPercent());
+  const rankTitle   = useProgressStore(s => s.getRankTitle());
   const towerBest   = useProgressStore(s => s.towerBest);
 
   const [search, setSearch] = useState('');
-  const [throwAnim, setThrowAnim] = useState(null); // { id, x, y }
 
   const handleSelectPoke = useCallback((id, e) => {
-    // Pokeball throw animation: from click position toward team bar
-    const rect = e.currentTarget.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    setThrowAnim({ id, x: cx, y: cy, key: Date.now() });
-    setTimeout(() => setThrowAnim(null), 700);
     togglePoke(id);
   }, [togglePoke]);
 
@@ -74,7 +70,7 @@ export function SelectionScreen() {
     });
   }, [currentGen, search]);
 
-  const canStart = selectedIds.length >= 1;
+  const canStart = selectedIds.length >= 4;
 
   return (
     <div className={styles.screen}>
@@ -83,8 +79,9 @@ export function SelectionScreen() {
         <div className={styles.profileLeft}>
           <span className={styles.levelBadge}>Lv.{level}</span>
           <div className={styles.xpBar}>
-            <div className={styles.xpFill} style={{ width: `${Math.min(100, xp)}%` }} />
+            <div className={styles.xpFill} style={{ width: `${xpPercent}%` }} />
           </div>
+          <span className={styles.rankTitle}>{rankTitle}</span>
         </div>
         <div className={styles.profileRight}>
           🏰 أفضل: <strong>{towerBest}</strong>
@@ -131,6 +128,18 @@ export function SelectionScreen() {
       {/* Action buttons */}
       <div className={styles.actions}>
         <button
+          className={styles.randomBtn}
+          onClick={selectRandomTeam}
+        >
+          <div style={{marginBottom: '8px'}}>اختر فريق عشوائي</div>
+          <div style={{display: 'flex', gap: '8px', justifyContent: 'center'}}>
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" alt="Poké Ball" style={{width: '20px', height: '20px'}} />
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png" alt="Great Ball" style={{width: '20px', height: '20px'}} />
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png" alt="Ultra Ball" style={{width: '20px', height: '20px'}} />
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png" alt="Master Ball" style={{width: '20px', height: '20px'}} />
+          </div>
+        </button>
+        <button
           className={styles.startBtn}
           disabled={!canStart}
           onClick={startBattle}
@@ -144,17 +153,6 @@ export function SelectionScreen() {
           🏰 برج المعارك
         </button>
       </div>
-
-      {/* Pokeball throw animation */}
-      {throwAnim && (
-        <div
-          key={throwAnim.key}
-          className={styles.pokeballThrow}
-          style={{ '--bx': throwAnim.x + 'px', '--by': throwAnim.y + 'px' }}
-        >
-          ⚾
-        </div>
-      )}
 
       {/* Poke grid */}
       <PokeGrid
@@ -173,9 +171,23 @@ function TeamBar({ ids, onRemove }) {
       {ids.map(id => {
         const poke = DEX.find(p => p.id === id);
         if (!poke) return null;
+        const stats = POKE_STATS[id];
+        const bst = poke.hp + (stats ? Object.values(stats).reduce((a,b)=>a+b,0) : 0);
         return (
           <div key={id} className={styles.teamSlot}>
-            <PokeSprite id={id} name={poke.name} size={38} />
+            <div style={{position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: '6px'}}>
+              <PokeSprite id={id} name={poke.name} size={38} />
+              <div style={{textAlign: 'center', flex: 1}}>
+                <div style={{fontFamily: "'Cairo', sans-serif", fontSize: '11px', fontWeight: '700', color: '#fff', marginBottom: '3px'}}>{poke.name.toUpperCase()}</div>
+                <div style={{display: 'flex', gap: '2px', justifyContent: 'center', marginBottom: '3px', flexWrap: 'wrap'}}>
+                  {poke.types.map(t => <TypeBadge key={t} type={t} size="sm" />)}
+                </div>
+                <div style={{fontFamily: "'Cairo', sans-serif", fontSize: '9px', color: 'rgba(255,255,255,.6)'}}>
+                  <div>❤️ {poke.hp}HP</div>
+                  <div>⭐ BST: {bst}</div>
+                </div>
+              </div>
+            </div>
             <button className={styles.removeBtn} onClick={() => onRemove(id)}>✕</button>
           </div>
         );

@@ -8,6 +8,18 @@ export function xpForLevel(lvl) {
   return 100 + (lvl - 1) * 50;
 }
 
+export function getRankTitle(level) {
+  if (level >= 50) return '👑 أسطورة البوكيمون';
+  if (level >= 40) return '🏆 بطل البوكيمون';
+  if (level >= 30) return '⚡ خبير البوكيمون';
+  if (level >= 25) return '🔥 محترف البوكيمون';
+  if (level >= 20) return '⭐ مدرب متقدم';
+  if (level >= 15) return '🌟 مدرب محترف';
+  if (level >= 10) return '🎯 مدرب ماهر';
+  if (level >= 5)  return '🛡️ مدرب مبتدئ';
+  return '🎓 متدرب بوكيمون';
+}
+
 export const ACHIEVEMENTS = [
   { id: 'first_win',    title: '🏆 أول انتصار!',     desc: 'فز بمعركتك الأولى',           check: p => p.wins >= 1          },
   { id: 'win_5',        title: '🔥 5 انتصارات',       desc: 'فز بـ 5 معارك',               check: p => p.wins >= 5          },
@@ -52,6 +64,10 @@ export const useProgressStore = create(
       xpPercent() {
         const s = get();
         return Math.min(100, Math.round(s.xp / xpForLevel(s.level) * 100));
+      },
+
+      getRankTitle() {
+        return getRankTitle(get().level);
       },
 
       checkAchievements() {

@@ -17,7 +17,7 @@ const STATUS_CFG = {
 };
 
 export function FighterCard({
-  member, isPlayer, isActive,
+  member, isPlayer, isActive, fieldPos,
   onSwap, onCancelSwap, pendingSwap,
   isTarget, onTarget,
 }) {

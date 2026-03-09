@@ -106,9 +106,10 @@ function BattleMain() {
 
   // ── Bench members ──────────────────────────────────────────────────────────
   const fieldSet     = new Set(pField.filter(i => i !== null));
+  const swapsSet     = new Set(pendingSwaps.filter(s => s !== null));
   const benchMembers = myTeam
     .map((m, i) => ({ ...m, teamIdx: i }))
-    .filter(m => !m.fainted && !fieldSet.has(m.teamIdx));
+    .filter(m => !m.fainted && !fieldSet.has(m.teamIdx) && !swapsSet.has(m.teamIdx));
 
   // ── 2v2 readiness ──────────────────────────────────────────────────────────
   const slotReady = (fi) => {
@@ -273,7 +274,7 @@ function BattleMain() {
       {swapFor !== null && (
         <div className={styles.swapPanel}>
           <div className={styles.swapHeader}>
-            <span>🔄 اختر البوكيمون البديل</span>
+            <span>🔄 اختر البوكيمون البديل للموضع {swapFor + 1}</span>
             <button className={styles.swapClose} onClick={() => setSwapFor(null)}>✕</button>
           </div>
           <div className={styles.benchRow}>

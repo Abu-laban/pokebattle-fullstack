@@ -106,6 +106,27 @@ export const useBattleStore = create((set, get) => ({
   },
   removeFromTeam(id) { set(s => ({ selectedIds: s.selectedIds.filter(x => x !== id) })); },
 
+  // ── Random team selection ─────────────────────────────────────────────
+  selectRandomTeam() {
+    const available = DEX.filter(p => !get().selectedIds.includes(p.id));
+    const shuffled = available.sort(() => 0.5 - Math.random());
+    const randomIds = shuffled.slice(0, 4).map(p => p.id);
+    set({ selectedIds: randomIds });
+  },
+
+  selectRandomTowerTeam() {
+    const available = DEX.filter(p => !get().towerTeam.some(t => t.poke.id === p.id));
+    const shuffled = available.sort(() => 0.5 - Math.random());
+    const randomPokes = shuffled.slice(0, 6).map(p => ({ 
+      poke: p, 
+      hp: p.hp, 
+      maxHp: p.hp, 
+      fainted: false, 
+      ult: 0 
+    }));
+    set({ towerTeam: randomPokes });
+  },
+
   // ── Start normal 2v2 battle ──────────────────────────────────────────────
   startBattle() {
     SFX.playBattleBGM();
@@ -225,6 +246,8 @@ export const useBattleStore = create((set, get) => ({
     setTimeout(() => SFX.playSelectBGM(), 300);
     set({
       screen: 'selection', active: false, pTurn: true,
+      selectedIds: [], // إزالة جميع اختيارات البوكيمون
+      towerTeam: [], // إزالة فريق البرج أيضاً
       myTeam: [], enTeam: [],
       pField: [null,null], eField: [null,null],
       weather: new Weather().toPlain(), log: [], logCounter: 0,

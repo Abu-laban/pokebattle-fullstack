@@ -38,15 +38,15 @@ export function pokeApiArt(id) {
   return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${apiId}.png`;
 }
 
-// ── Fallback chain: SD animated → SD static → PokeAPI front (correct ID) → PokeAPI art
+// ── Fallback chain: PokeAPI front → PokeAPI art → SD animated → SD static
 export function getSpriteChain(id, name) {
   const slug  = nameToSD(name, id);
   const apiId = FORM_API_IDS[id] || id;
   return [
-    `https://play.pokemonshowdown.com/sprites/ani/${slug}.gif`,
-    `https://play.pokemonshowdown.com/sprites/gen5/${slug}.png`,
     `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${apiId}.png`,
     `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${apiId}.png`,
+    `https://play.pokemonshowdown.com/sprites/ani/${slug}.gif`,
+    `https://play.pokemonshowdown.com/sprites/gen5/${slug}.png`,
   ];
 }
 
@@ -54,7 +54,10 @@ export function loadSpriteWithFallback(img, id, name) {
   if (!img) return;
   const chain = getSpriteChain(id, name);
   let idx = 0;
-  img.onload  = () => { img.style.opacity = '1'; };
-  img.onerror = () => { if (idx < chain.length) img.src = chain[idx++]; };
+  img.onload  = () => { img.style.opacity = '1'; console.log('Sprite loaded:', name); };
+  img.onerror = () => { 
+    console.log('Sprite failed:', chain[idx-1], 'trying next');
+    if (idx < chain.length) img.src = chain[idx++]; 
+  };
   img.src = chain[idx++];
 }
