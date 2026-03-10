@@ -292,7 +292,9 @@ function PokeHoverCard({ poke }) {
       <div className={styles.hoverCardOverlay} />
       <div 
         className={styles.hoverCard}
-        style={{ '--card-color': bgColor }}
+        style={{
+          '--card-color': bgColor
+        }}
       >
       {/* Header with gradient background */}
       <div className={styles.hoverCardHeader}>
