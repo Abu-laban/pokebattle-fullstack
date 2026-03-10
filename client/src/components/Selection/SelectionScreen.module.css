@@ -16,9 +16,11 @@
   margin-bottom: 16px; backdrop-filter: blur(10px);
   animation: profileIn .4s ease both;
   box-shadow: 0 2px 12px rgba(0,0,0,.3);
+  z-index: 10000;
+  position: relative;
 }
 .profileLeft  { display:flex; align-items:center; gap:12px; flex:1; }
-.profileRight { font-size:12px; color:rgba(255,255,255,.45); font-family:'Cairo',sans-serif; }
+.profileRight { font-size:12px; color:rgba(255,255,255,.45); font-family:'Cairo',sans-serif; display: flex; align-items: center; gap: 8px; }
 .levelBadge {
   font-family:'Press Start 2P',monospace; font-size:10px; color:#FFD600;
   white-space:nowrap; text-shadow:0 0 14px rgba(255,214,0,.5);
@@ -31,6 +33,8 @@
 .genTabs {
   display:flex; gap:7px; justify-content:center;
   flex-wrap:wrap; margin-bottom:18px;
+  position: relative;
+  z-index: 10000;
 }
 .genTab {
   position:relative; overflow:hidden; cursor:pointer;
@@ -68,7 +72,11 @@
 .g-7.active    { background:linear-gradient(145deg,rgba(255,193,7,.18),rgba(0,172,193,.12)); border-color:rgba(255,193,7,.55); box-shadow:0 8px 22px rgba(255,193,7,.12); }
 
 /* ── Search ── */
-.searchWrap { margin-bottom:12px; }
+.searchWrap { 
+  margin-bottom:12px;
+  position: relative;
+  z-index: 10000;
+}
 .search {
   width:100%; padding:12px 18px;
   background:rgba(255,255,255,.05);
@@ -85,6 +93,8 @@
 .infoBar {
   text-align:center; font-size:13px; color:rgba(255,255,255,.4);
   margin-bottom:12px; min-height:18px; font-family:'Cairo',sans-serif;
+  position: relative;
+  z-index: 10000;
 }
 
 /* ── Team bar ── */
@@ -102,6 +112,8 @@
   padding: 14px 18px;
   backdrop-filter: blur(10px);
   box-shadow: 0 0 20px rgba(255,214,0,.06), inset 0 1px 0 rgba(255,255,255,.05);
+  position: relative;
+  z-index: 10000;
 }
 .teamSlot {
   position: relative;
@@ -176,7 +188,7 @@
   text-align: center; cursor: pointer;
   transition: all .28s cubic-bezier(.34,1.56,.64,1);
   animation: cardReveal .4s cubic-bezier(.34,1.56,.64,1) both;
-  position: relative; overflow: hidden;
+  position: relative; overflow: visible;
   opacity: 1; /* ensure visible even before animation */
   box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 2px 8px rgba(0,0,0,.3);
 }
@@ -195,6 +207,15 @@
 }
 .card.disabled { opacity:.3; cursor:not-allowed; }
 
+/* locked card appearance */
+.card.locked {
+  filter: grayscale(1) brightness(0.7);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.card.locked .cardName { opacity:0.6; }
+.card.lockedTypes { opacity:0.4; }
+
 .cardImg         { width:80px; height:80px; object-fit:contain; display:block; margin:0 auto 7px; image-rendering:pixelated; filter:drop-shadow(0 4px 10px rgba(0,0,0,.6)); transition:transform .3s; }
 .cardImgPlaceholder { width:80px; height:80px; margin:0 auto 7px; border-radius:50%; background:rgba(255,255,255,.04); }
 
@@ -208,6 +229,7 @@
 .cardMeta  { display:flex; align-items:center; justify-content:center; gap:5px; }
 .abilityTag{ font-size:12px; line-height:1; }
 .cardHp    { font-size:10px; color:rgba(255,255,255,.5); font-weight:700; font-family:'Cairo',sans-serif; }
+.levelTag  { font-size:10px; background:rgba(79,195,247,.12); padding:1px 4px; border-radius:4px; margin-left:4px; color:#4FC3F7; }
 .bstTag    { font-size:10px; color:rgba(255,214,0,.7); font-family:'Cairo',sans-serif; font-weight:700; }
 
 /* ══ POKEBALL THROW ANIMATION ══ */
@@ -246,4 +268,231 @@
 /* Card select flash */
 .card.sel {
   animation: cardSelect .4s cubic-bezier(.34,1.56,.64,1) both !important;
+}
+
+/* Stats button in profile bar */
+.statsBtn {
+  background: rgba(255, 214, 0, 0.1);
+  border: 1.5px solid rgba(255, 214, 0, 0.3);
+  color: #ffd700;
+  font-size: 18px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  width: 32px;
+  flex-shrink: 0;
+}
+
+.statsBtn:hover {
+  background: rgba(255, 214, 0, 0.2);
+  border-color: rgba(255, 214, 0, 0.6);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(255, 214, 0, 0.2);
+}
+
+/* Lock reason tooltip */
+.lockTooltip {
+  position: absolute;
+  bottom: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.95);
+  color: #ff6b6b;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-family: 'Cairo', sans-serif;
+  white-space: nowrap;
+  z-index: 100;
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.2);
+  pointer-events: none;
+  animation: tooltipAppear 0.2s ease-out;
+}
+
+/* Hover Card Overlay Background */
+.hoverCardOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;100
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.85) 100%);
+  z-index: 9998;
+  pointer-events: none;
+  animation: overlayAppear 0.3s ease-out;
+}
+
+/* Pokemon Hover Card */
+.hoverCard {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 320px;
+  background: rgba(15, 20, 40, 1);
+  border: 3px solid var(--card-color, #4FC3F7);
+  border-radius: 24px;
+  z-index: 101;
+  pointer-events: none;
+  animation: hoverCardAppear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9), 0 0 60px var(--card-color, #4FC3F7);
+  backdrop-filter: blur(15px);
+  overflow: hidden;
+}
+
+.hoverCardHeader {
+  position: relative;
+  height: 180px;
+  background: linear-gradient(135deg, var(--card-color, #4FC3F7) 0%, var(--card-color, #4FC3F7) 0%, transparent 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 25px;
+  overflow: hidden;
+}
+
+.hoverCardHeader::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hoverCardHeader::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 100% 100%, rgba(0, 0, 0, 0.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hoverCardImg {
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.7));
+  position: relative;
+  z-index: 2;
+}
+
+.hoverCardContent {
+  padding: 25px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(0, 0, 0, 0.3) 100%);
+}
+
+.hoverCardName {
+  font-family: 'Cairo', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 12px;
+  text-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+}
+
+.hoverCardTypes {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.hoverCardStats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  border-left: 4px solid var(--card-color, #4FC3F7);
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: 'Cairo', sans-serif;
+}
+
+.statLabel {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.statValue {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--card-color, #4FC3F7);
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.hoverCardAbility {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 14px;
+  border-left: 4px solid rgba(255, 255, 255, 0.2);
+}
+
+.abilityIcon {
+  font-size: 24px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.abilityName {
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.abilityDesc {
+  font-family: 'Cairo', sans-serif;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.65);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+@keyframes tooltipAppear {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes hoverCardAppear {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9) rotateY(20deg);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotateY(0deg);
+  }
+}
+
+@keyframes overlayAppear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }

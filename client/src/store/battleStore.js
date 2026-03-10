@@ -3,6 +3,7 @@
 // ══════════════════════════════════════════
 import { create } from 'zustand';
 import { DEX } from '../data/dex.js';
+import { useProgressStore } from './progressStore.js';
 import { Weather } from '../engine/Weather.js';
 import { BattleMember } from '../engine/BattleMember.js';
 import { SFX } from '../engine/audio.js';
@@ -45,6 +46,7 @@ export const useBattleStore = create((set, get) => ({
 
   // ── Overlays ─────────────────────────────────────────────────────────────
   overlayResult: false,
+  overlayEvolution: false,
   resultData: null,
 
   // ════ ACTIONS ════════════════════════════════════════════════════════════
@@ -94,6 +96,8 @@ export const useBattleStore = create((set, get) => ({
 
   showOverlay(name)  { set({ [`overlay${name}`]: true  }); },
   closeOverlay(name) { set({ [`overlay${name}`]: false }); },
+  showEvolution() { set({ overlayEvolution: true }); },
+  closeEvolution() { set({ overlayEvolution: false }); },
   setResultData(d)   { set({ resultData: d }); },
 
   toggleSelectPoke(id) {
@@ -108,14 +112,16 @@ export const useBattleStore = create((set, get) => ({
 
   // ── Random team selection ─────────────────────────────────────────────
   selectRandomTeam() {
-    const available = DEX.filter(p => !get().selectedIds.includes(p.id));
+    const progress = useProgressStore.getState();
+    const available = DEX.filter(p => !get().selectedIds.includes(p.id) && progress.isPokeUnlocked(p));
     const shuffled = available.sort(() => 0.5 - Math.random());
     const randomIds = shuffled.slice(0, 4).map(p => p.id);
     set({ selectedIds: randomIds });
   },
 
   selectRandomTowerTeam() {
-    const available = DEX.filter(p => !get().towerTeam.some(t => t.poke.id === p.id));
+    const progress = useProgressStore.getState();
+    const available = DEX.filter(p => !get().towerTeam.some(t => t.poke.id === p.id) && progress.isPokeUnlocked(p));
     const shuffled = available.sort(() => 0.5 - Math.random());
     const randomPokes = shuffled.slice(0, 6).map(p => ({ 
       poke: p, 

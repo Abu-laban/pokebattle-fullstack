@@ -1,0 +1,46 @@
+/* Styles similar to ResultOverlay but simplified */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.box {
+  background: #111;
+  border: 2px solid #444;
+  border-radius: 12px;
+  padding: 24px;
+  width: 90%;
+  max-width: 500px;
+  color: #fff;
+  font-family: 'Cairo', sans-serif;
+  box-shadow: 0 0 30px rgba(0,0,0,.8);
+}
+.title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  text-align: center;
+}
+.taskList { max-height: 400px; overflow-y: auto; }
+.taskItem { margin-bottom: 14px; }
+.pokeName { font-weight: 600; margin-bottom: 4px; }
+ul { margin: 0; padding-left: 18px; }
+li { font-size: 13px; margin-bottom: 2px; }
+li.done { text-decoration: line-through; color: #8f8; }
+.closeBtn {
+  margin-top: 12px;
+  display: block;
+  margin-left: auto;
+  padding: 8px 16px;
+  background: #ff5722;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+.closeBtn:hover { background: #ff7043; }

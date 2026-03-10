@@ -1,13 +1,16 @@
-import { useEffect }         from 'react';
+import { useEffect, useState }         from 'react';
 import { useBattleStore }    from './store/battleStore.js';
 import { useAuthStore }      from './store/authStore.js';
 import { WEATHER_INFO }      from './engine/Weather.js';
 import { SFX }               from './engine/audio.js';
+import { DEX }               from './data/dex.js';
 import { SelectionScreen }   from './components/Selection/SelectionScreen.jsx';
 import { BattleScreen }      from './components/Battle/BattleScreen.jsx';
 import { TowerScreen }       from './components/Tower/TowerScreen.jsx';
 import { AuthScreen }        from './components/Auth/AuthScreen.jsx';
 import { LeaderboardScreen } from './components/Leaderboard/LeaderboardScreen.jsx';
+import { ResultOverlay }      from './components/Overlays/ResultOverlay.jsx';
+import { EvolutionOverlay }    from './components/Overlays/EvolutionOverlay.jsx';
 import './styles/globals.css';
 
 function Stars() {
@@ -31,6 +34,8 @@ export default function App() {
   const setScreen = useBattleStore(s => s.setScreen);
   const { user, restoreSession, logout } = useAuthStore();
 
+  const [notifications, setNotifications] = useState([]);
+
   // Restore JWT session on startup
   useEffect(() => { restoreSession(); }, []);
 
@@ -44,9 +49,36 @@ export default function App() {
     return () => clearTimeout(t);
   }, []);
 
+  // Listen for poke unlock events
+  useEffect(() => {
+    const handler = (e) => {
+      const { id } = e.detail;
+      const poke = DEX.find(p => p.id === id);
+      if (poke) {
+        const notif = { id: Date.now(), text: `🔓 ${poke.name} مفتوح الآن!`, type: 'unlock' };
+        setNotifications(prev => [...prev, notif]);
+        setTimeout(() => setNotifications(prev => prev.filter(n => n.id !== notif.id)), 4000);
+      }
+    };
+    window.addEventListener('poke-unlocked', handler);
+    return () => window.removeEventListener('poke-unlocked', handler);
+  }, []);
+
   return (
     <>
       <Stars />
+      {/* Notifications */}
+      <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 1000 }}>
+        {notifications.map(n => (
+          <div key={n.id} style={{
+            background: 'rgba(0,0,0,0.8)', color: '#FFD600', padding: '10px 15px',
+            borderRadius: '8px', marginBottom: '10px', fontFamily: "'Cairo', sans-serif",
+            boxShadow: '0 0 10px rgba(255,214,0,0.5)', animation: 'fadeIn 0.5s'
+          }}>
+            {n.text}
+          </div>
+        ))}
+      </div>
       <div className="app-wrap">
         <header style={headerStyle}>
           <div style={headerCenter}>
@@ -72,6 +104,8 @@ export default function App() {
         {screen === 'battle'      && <BattleScreen />}
         {screen === 'tower-pick'  && <TowerScreen />}
       </div>
+      <ResultOverlay />
+      <EvolutionOverlay />
     </>
   );
 }

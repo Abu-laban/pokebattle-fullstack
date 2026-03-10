@@ -3,10 +3,11 @@
 // ══════════════════════════════════════════
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useBattleStore }   from '../../store/battleStore.js';
-import { useProgressStore } from '../../store/progressStore.js';
+import { useProgressStore, UNLOCK_RULES } from '../../store/progressStore.js';
 import { DEX }              from '../../data/dex.js';
 import { PokeSprite }       from '../UI/PokeSprite.jsx';
 import { TypeBadge }        from '../UI/TypeBadge.jsx';
+import { StatsOverlay }     from '../Overlays/StatsOverlay.jsx';
 import styles               from './SelectionScreen.module.css';
 import { getPokeAbility }  from '../../data/abilities.js';
 import { POKE_STATS }      from '../../data/pokeStats.js';
@@ -37,6 +38,8 @@ export function SelectionScreen() {
   const selectedIds = useBattleStore(s => s.selectedIds);
   const currentGen  = useBattleStore(s => s.currentGen);
 
+  const [statsOpen, setStatsOpen] = useState(false);
+
   // Apply gen-specific body background
   useEffect(() => {
     document.body.classList.remove('gen-1','gen-2','gen-3','gen-4','gen-5','gen-6','gen-7');
@@ -54,6 +57,9 @@ export function SelectionScreen() {
   const xpPercent   = useProgressStore(s => s.xpPercent());
   const rankTitle   = useProgressStore(s => s.getRankTitle());
   const towerBest   = useProgressStore(s => s.towerBest);
+  const wins        = useProgressStore(s => s.wins);
+  const losses      = useProgressStore(s => s.losses);
+  const isUnlocked  = useProgressStore(s => s.isPokeUnlocked);
 
   const [search, setSearch] = useState('');
 
@@ -74,6 +80,8 @@ export function SelectionScreen() {
 
   return (
     <div className={styles.screen}>
+      <StatsOverlay isOpen={statsOpen} onClose={() => setStatsOpen(false)} />
+      
       {/* Profile bar */}
       <div className={styles.profileBar}>
         <div className={styles.profileLeft}>
@@ -84,7 +92,14 @@ export function SelectionScreen() {
           <span className={styles.rankTitle}>{rankTitle}</span>
         </div>
         <div className={styles.profileRight}>
-          🏰 أفضل: <strong>{towerBest}</strong>
+          🏆 انتصارات: <strong>{wins}</strong> / خسائر: <strong>{losses}</strong> · 🏰 أفضل برج: <strong>{towerBest}</strong>
+          <button
+            className={styles.statsBtn}
+            onClick={() => setStatsOpen(true)}
+            title="عرض الإحصائيات"
+          >
+            📊
+          </button>
         </div>
       </div>
 
@@ -158,6 +173,7 @@ export function SelectionScreen() {
       <PokeGrid
         pokes={filtered}
         selectedIds={selectedIds}
+        unlockedFn={isUnlocked}
         onSelect={handleSelectPoke}
       />
     </div>
@@ -197,27 +213,141 @@ function TeamBar({ ids, onRemove }) {
 }
 
 // ── Pokemon grid with lazy loading ────────────────────────────────────────────
-function PokeGrid({ pokes, selectedIds, onSelect }) {
+function PokeGrid({ pokes, selectedIds, unlockedFn, onSelect }) {
+  const progress = useProgressStore();
+
+  const computeReason = (p) => {
+    const lvlReq = Math.ceil(p.id / 50);
+    const rule = UNLOCK_RULES[p.id];
+    if (rule) {
+      if (rule.megaEvent && !progress.megaEventActive) return '🔐 يتطلب حدث مخصص لفتح';
+      if (rule.minLevel && progress.level < rule.minLevel) return `🔐 يتطلب مستوى ${rule.minLevel}+`;
+      if (rule.pokeLevel) {
+        const parentPoke = DEX.find(x => x.id === rule.pokeLevel.id);
+        const parentName = parentPoke ? parentPoke.name : `#${rule.pokeLevel.id}`;
+        const parentLvl = progress.pokeLevel(rule.pokeLevel.id);
+        const lvlReq = rule.pokeLevel.level;
+        return `🔐 ${parentName} يجب أن يصل مستوى ${lvlReq} (حالياً: ${parentLvl})`;
+      }
+      if (rule.winWithPoke) {
+        const targetPoke = DEX.find(x => x.id === rule.winWithPoke.id);
+        const targetName = targetPoke ? targetPoke.name : `#${rule.winWithPoke.id}`;
+        const winsNeeded = rule.winWithPoke.count;
+        const winsGot = progress.winsWithPoke[rule.winWithPoke.id] || 0;
+        return `🔐 ارح ${winsNeeded} مرات مع ${targetName} (${winsGot}/${winsNeeded})`;
+      }
+      if (rule.defeatType) return `🔐 اهزم ${rule.defeatType.count} × من نوع ${rule.defeatType.type}`;
+      if (rule.winWithTeam) return `🔐 اربح ${rule.winWithTeam.count} مرات بهذا الفريق`;
+      if (rule.towerBest) return `🔐 سلسلة برج ${rule.towerBest}+`; 
+    }
+    if (progress.level < lvlReq) return `🔐 يتطلب مستوى ${lvlReq} أو أعلى`;
+    return '🔐 مقفل';
+  };
+
   return (
     <div className={styles.grid}>
-      {pokes.map((p, i) => (
-        <PokeCard
-          key={p.id}
-          poke={p}
-          selected={selectedIds.includes(p.id)}
-          disabled={selectedIds.length >= 4 && !selectedIds.includes(p.id)}
-          delay={Math.min(i * 0.02, 0.5)}
-          onSelect={(e) => onSelect(p.id, e)}
-        />
-      ))}
+      {pokes.map((p, i) => {
+        const locked = unlockedFn && !unlockedFn(p);
+        const reason = locked ? computeReason(p) : '';
+        return (
+          <PokeCard
+            key={p.id}
+            poke={p}
+            selected={selectedIds.includes(p.id)}
+            locked={locked}
+            disabled={(selectedIds.length >= 4 && !selectedIds.includes(p.id)) || locked}
+            delay={Math.min(i * 0.02, 0.5)}
+            onSelect={(e) => onSelect(p.id, e)}
+            lockReason={reason}
+          />
+        );
+      })}
     </div>
   );
 }
 
 // ── Single pokemon card ───────────────────────────────────────────────────────
-function PokeCard({ poke, selected, disabled, delay, onSelect }) {
+function PokeHoverCard({ poke }) {
+  const stats   = POKE_STATS[poke.id];
+  const ability = getPokeAbility(poke.id);
+  const progress = useProgressStore();
+  
+  const bst = stats ? Object.values(stats).reduce((a, b) => a + b, 0) + poke.hp : poke.hp;
+  const winsWithPoke = progress.winsWithPoke[poke.id] || 0;
+  const pokeLevel = progress.pokeLevel(poke.id);
+  
+  // Get primary type for background color
+  const primaryType = poke.types[0];
+  const typeColors = {
+    'FIRE': '#FF6B35', 'WATER': '#4FC3F7', 'GRASS': '#66BB6A', 'ELECTRIC': '#FFD600',
+    'ICE': '#81D4FA', 'FIGHTING': '#E53935', 'POISON': '#AB47BC', 'GROUND': '#A1887F',
+    'FLYING': '#5E35B1', 'PSYCHIC': '#EC407A', 'BUG': '#8BC34A', 'ROCK': '#795548',
+    'GHOST': '#757575', 'DRAGON': '#5C6BC0', 'DARK': '#424242', 'STEEL': '#B0BEC5',
+    'FAIRY': '#F06292', 'NORMAL': '#BDBDBD'
+  };
+  const bgColor = typeColors[primaryType] || '#4FC3F7';
+  
+  return (
+    <>
+      <div className={styles.hoverCardOverlay} />
+      <div 
+        className={styles.hoverCard}
+        style={{ '--card-color': bgColor }}
+      >
+      {/* Header with gradient background */}
+      <div className={styles.hoverCardHeader}>
+        <PokeSprite id={poke.id} name={poke.name} size={120} className={styles.hoverCardImg} />
+      </div>
+      
+      {/* Content section */}
+      <div className={styles.hoverCardContent}>
+        <div className={styles.hoverCardName}>{poke.name}</div>
+        
+        {/* Types */}
+        <div className={styles.hoverCardTypes}>
+          {poke.types.map(t => <TypeBadge key={t} type={t} size="sm" />)}
+        </div>
+        
+        {/* Stats grid */}
+        <div className={styles.hoverCardStats}>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>❤️ HP</span>
+            <span className={styles.statValue}>{poke.hp}</span>
+          </div>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>⭐ BST</span>
+            <span className={styles.statValue}>{bst}</span>
+          </div>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>📊 Lvl</span>
+            <span className={styles.statValue}>{pokeLevel}</span>
+          </div>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>🏆 Wins</span>
+            <span className={styles.statValue}>{winsWithPoke}</span>
+          </div>
+        </div>
+        
+        {/* Ability */}
+        {ability && (
+          <div className={styles.hoverCardAbility}>
+            <span className={styles.abilityIcon}>{ability.icon}</span>
+            <div>
+              <div className={styles.abilityName}>{ability.name}</div>
+              <div className={styles.abilityDesc}>{ability.desc}</div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+    </>
+  );
+}
+
+function PokeCard({ poke, selected, disabled, locked, lockReason, delay, onSelect, progress }) {
   const ref       = useRef(null);
   const [vis, setVis] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
 
   useEffect(() => {
     const obs = new IntersectionObserver(
@@ -231,17 +361,26 @@ function PokeCard({ poke, selected, disabled, delay, onSelect }) {
   return (
     <div
       ref={ref}
-      className={`${styles.card} ${selected ? styles.sel : ''} ${disabled ? styles.disabled : ''}`}
+      className={`${styles.card} ${selected ? styles.sel : ''} ${disabled ? styles.disabled : ''} ${locked ? styles.locked : ''}`}
       style={{ animationDelay: `${delay}s` }}
       onClick={disabled ? undefined : (e) => onSelect(e)}
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
     >
       {vis && <PokeSprite id={poke.id} name={poke.name} size={80} className={styles.cardImg} />}
       {!vis && <div className={styles.cardImgPlaceholder} />}
-      <span className={styles.cardName}>{poke.name}</span>
-      <div className={styles.cardTypes}>
+      <span className={styles.cardName}>{poke.name}{locked && ' 🔒'}</span>
+      <div className={`${styles.cardTypes} ${locked ? styles.lockedTypes : ''}`}>
         {poke.types.map(t => <TypeBadge key={t} type={t} size="sm" />)}
       </div>
       <PokeCardMeta poke={poke} />
+      {showTooltip && (
+        locked ? (
+          <div className={styles.lockTooltip}>{lockReason}</div>
+        ) : (
+          <PokeHoverCard poke={poke} />
+        )
+      )}
     </div>
   );
 }
@@ -251,6 +390,7 @@ function PokeCardMeta({ poke }) {
   const stats   = POKE_STATS[poke.id];
   const ability = getPokeAbility(poke.id);
   const bst     = stats ? Object.values(stats).reduce((a, b) => a + b, 0) + poke.hp : null;
+  const pokeLevel = useProgressStore(s => s.pokeLevel)(poke.id);
   return (
     <div className={styles.cardMeta}>
       {ability && (
@@ -263,6 +403,9 @@ function PokeCardMeta({ poke }) {
         <span className={styles.bstTag} title={'مجموع الإحصائيات: ' + bst}>
           ⭐{bst}
         </span>
+      )}
+      {pokeLevel && pokeLevel > 1 && (
+        <span className={styles.levelTag} title={`Level ${pokeLevel}`}>Lv.{pokeLevel}</span>
       )}
     </div>
   );

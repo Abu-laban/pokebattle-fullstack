@@ -128,6 +128,17 @@ export function useBattleEngine() {
 
     if (!target.isAlive) {
       log('💀 ' + target.poke.name + ' سقط!', 'death');
+      // update progress statistics for unlocking
+      if (progress.recordDefeatType) {
+        // count each of the target's types separately
+        (target.poke.types || []).forEach(t => progress.recordDefeatType(t));
+      }
+      if (progress.recordWinWithPoke) {
+        progress.recordWinWithPoke(attacker.poke.id);
+      }
+      if (progress.gainPokeXp) {
+        progress.gainPokeXp(attacker.poke.id, 20);
+      }
       if (attacker._destinyBond) { attacker._destinyBond = false; attacker.forceKO(); }
       const evts = eField.processDeaths();
       evts.forEach(ev => log('🔄 ' + enTeam[ev.newIdx]?.poke?.name + ' يدخل!', 'sys'));
@@ -250,7 +261,15 @@ export function useBattleEngine() {
     const s = useBattleStore.getState();
     SFX.stopBGM();
     setTimeout(() => won ? SFX.victory?.() : SFX.defeat?.(), 200);
-    if (won) { progress.gainXP(30); progress.recordWin(); }
+    if (won) {
+      progress.gainXP(30);
+      progress.recordWin();
+      if (progress.recordWinWithTeam) {
+        // selectedIds are the IDs currently in use by player
+        const ids = useBattleStore.getState().selectedIds || [];
+        progress.recordWinWithTeam(ids);
+      }
+    }
     else       progress.recordLoss();
     store.setActive(false);
     store.setResultData({ type: 'battle', won, xp: won ? 30 : 0 });
