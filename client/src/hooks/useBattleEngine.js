@@ -1,5 +1,6 @@
 // ══════════════════════════════════════════
 // useBattleEngine — Full battle logic
+// v2: Smart AI + Speed-based turn ordering
 // ══════════════════════════════════════════
 import { useCallback } from 'react';
 import { useBattleStore, emitBattleAnim } from '../store/battleStore.js';
@@ -9,6 +10,7 @@ import { BattleField }      from '../engine/BattleField.js';
 import { Weather }          from '../engine/Weather.js';
 import { DamageEngine }     from '../engine/DamageEngine.js';
 import { StatusEngine }     from '../engine/StatusEngine.js';
+import { AIEngine }         from '../engine/AIEngine.js';
 import { MOVE_SECONDARY }   from '../data/moveSecondary.js';
 import { MOVE_EFFECTS }     from '../data/moveEffects.js';
 import { SFX, playTypeSound } from '../engine/audio.js';
@@ -54,12 +56,12 @@ export function useBattleEngine() {
       callback?.(); return;
     }
 
-    // ── Status / weather moves: apply to correct target ──────────────────────
+    // ── Status / weather moves ────────────────────────────────────────────────
     if (MOVE_EFFECTS[mv.n]) {
       const eff = MOVE_EFFECTS[mv.n];
-      let target = attacker; // default: self
+      let target = attacker;
       if (eff.weather) {
-        // Weather moves: just apply weather, no target needed
+        // weather only
       } else if (eff.target === 'foe') {
         const storedPos = s.pendingTargets[fieldPos];
         target = (storedPos !== null && storedPos !== undefined)
@@ -74,12 +76,10 @@ export function useBattleEngine() {
     }
 
     // ── Offensive attack ──────────────────────────────────────────────────────
-    // Smart target resolution: use stored target, but if null/dead → first alive enemy
     const storedTargetPos = s.pendingTargets[fieldPos];
     let target = storedTargetPos !== null && storedTargetPos !== undefined
       ? eField.memberAt(storedTargetPos)
       : null;
-    // If target is dead or not set, auto-target first alive enemy
     if (!target || !target.isAlive) {
       target = eField.activeMembers[0] ?? null;
     }
@@ -114,12 +114,11 @@ export function useBattleEngine() {
     else if (cat === 'special') target._lastSpecDmgReceived = dmg;
     target.dealDamage(dmg);
     if (mv.u) attacker.consumeUlt(); else attacker.chargeUlt(20);
-    // Emit animation for target sprite
     const hitFieldPos = s.eField.findIndex(ti => ti !== null && s.enTeam[ti]?.poke?.name === target.poke.name);
     if (hitFieldPos >= 0) emitBattleAnim(mult >= 2 ? 'superEff' : 'hit', hitFieldPos, true);
 
-    const effTxt = mult === 0 ? ' مناعة!' : mult >= 2 ? ' فعّال جداً! 🔥' : mult <= 0.5 ? ' غير فعّال...' : '';
-    log('⚔ ' + attacker.poke.name + ' → ' + target.poke.name + ': ' + mv.n + ' (-' + dmg + ' HP)' + effTxt + (stab > 1 ? ' [STAB]' : ''), 'playerAtk');
+    const effTxt = mult === 0 ? ' مناعة!' : mult >= 4 ? ' فعّال جداً جداً! 🔥🔥' : mult >= 2 ? ' فعّال جداً! 🔥' : mult <= 0.25 ? ' غير فعّال أبداً...' : mult <= 0.5 ? ' غير فعّال...' : '';
+    log('⚔ ' + attacker.poke.name + ' → ' + target.poke.name + ': ' + mv.n + ' (-' + dmg + ' HP)' + effTxt + (stab > 1 ? ' [STAB]' : '') + (mv.u ? ' [ULT!]' : ''), 'playerAtk');
 
     if (mult >= 2) progress.recordSuperEff?.();
 
@@ -128,17 +127,9 @@ export function useBattleEngine() {
 
     if (!target.isAlive) {
       log('💀 ' + target.poke.name + ' سقط!', 'death');
-      // update progress statistics for unlocking
-      if (progress.recordDefeatType) {
-        // count each of the target's types separately
-        (target.poke.types || []).forEach(t => progress.recordDefeatType(t));
-      }
-      if (progress.recordWinWithPoke) {
-        progress.recordWinWithPoke(attacker.poke.id);
-      }
-      if (progress.gainPokeXp) {
-        progress.gainPokeXp(attacker.poke.id, 20);
-      }
+      (target.poke.types || []).forEach(t => progress.recordDefeatType?.(t));
+      progress.recordWinWithPoke?.(attacker.poke.id);
+      progress.gainPokeXp?.(attacker.poke.id, 20);
       if (attacker._destinyBond) { attacker._destinyBond = false; attacker.forceKO(); }
       const evts = eField.processDeaths();
       evts.forEach(ev => log('🔄 ' + enTeam[ev.newIdx]?.poke?.name + ' يدخل!', 'sys'));
@@ -150,7 +141,7 @@ export function useBattleEngine() {
     callback?.();
   }, [store, progress, log]);
 
-  // ── ENEMY HIT ──────────────────────────────────────────────────────────────
+  // ── ENEMY HIT — Smart AI ────────────────────────────────────────────────────
   const executeEnemyHit = useCallback((fieldPos, callback) => {
     const s      = useBattleStore.getState();
     const myTeam = hydrateTeam(s.myTeam);
@@ -162,27 +153,34 @@ export function useBattleEngine() {
     const attacker = eField.memberAt(fieldPos);
     if (!attacker || !attacker.isAlive) { callback?.(); return; }
 
-    // Enemy picks a random move — prefer offensive
-    const moves   = attacker.poke.moves || [];
-    const offMoves = moves.filter(m => m.p > 0 && !m.u);
-    const mv       = (offMoves.length ? offMoves : moves)[Math.floor(Math.random() * (offMoves.length || moves.length))];
+    // ── Smart AI decision ─────────────────────────────────────────────────────
+    const alivePTargets = pField.activeMembers;
+    if (!alivePTargets.length) { callback?.(); return; }
+
+    const difficulty = AIEngine.getDifficulty(s.towerStreak || 0);
+    const { moveIdx, targetFieldPos } = AIEngine.decide(
+      attacker, alivePTargets, weather, difficulty
+    );
+
+    const moves = attacker.poke.moves || [];
+    const mv    = moves[moveIdx];
     if (!mv) { callback?.(); return; }
 
     const blocked = StatusEngine.checkTurnBlock(attacker, log);
     if (blocked) { commitField(store, pField, eField, myTeam, enTeam); callback?.(); return; }
 
-    const alivePSlots = pField.toSlots().filter(i => i !== null && myTeam[i]?.isAlive);
-    if (!alivePSlots.length) { callback?.(); return; }
-    const targetIdx = alivePSlots[Math.floor(Math.random() * alivePSlots.length)];
-    const target    = myTeam[targetIdx];
+    // Resolve target: map from alivePTargets index to actual player team member
+    const target = alivePTargets[targetFieldPos] ?? alivePTargets[0];
     if (!target || !target.isAlive) { callback?.(); return; }
 
-    // Enemy status/weather moves
+    // ── Enemy status/weather moves ─────────────────────────────────────────────
     if (MOVE_EFFECTS[mv.n]) {
       const eff = MOVE_EFFECTS[mv.n];
       const effTarget = eff.target === 'foe' ? target : attacker;
       StatusEngine.applyMoveEffect(mv.n, attacker, effTarget, log, (type) => store.setWeather(type));
       if (mv.u) attacker.consumeUlt(); else attacker.chargeUlt(10);
+      const moveLabel = mv.u ? ' [ULT!]' : '';
+      log('🤖 ' + attacker.poke.name + ': ' + mv.n + moveLabel, 'enemyAtk');
       commitField(store, pField, eField, myTeam, enTeam);
       callback?.(); return;
     }
@@ -206,8 +204,9 @@ export function useBattleEngine() {
     const playerHitPos = s.pField.findIndex(ti => ti !== null && s.myTeam[ti]?.poke?.name === target.poke.name);
     if (playerHitPos >= 0) emitBattleAnim(mult >= 2 ? 'superEff' : 'hit', playerHitPos, false);
 
-    const effTxt = mult >= 2 ? ' فعّال جداً! 🔥' : mult <= 0.5 ? ' غير فعّال...' : '';
-    log('💥 ' + attacker.poke.name + ' → ' + target.poke.name + ': ' + mv.n + ' (-' + dmg + ' HP)' + effTxt, 'enemyAtk');
+    const effTxt = mult === 0 ? ' مناعة!' : mult >= 4 ? ' فعّال جداً جداً! 🔥🔥' : mult >= 2 ? ' فعّال جداً! 🔥' : mult <= 0.25 ? ' غير فعّال أبداً...' : mult <= 0.5 ? ' غير فعّال...' : '';
+    const ultTag = mv.u ? ' [ULT!]' : '';
+    log('💥 ' + attacker.poke.name + ' → ' + target.poke.name + ': ' + mv.n + ' (-' + dmg + ' HP)' + effTxt + ultTag, 'enemyAtk');
 
     const sec = MOVE_SECONDARY[mv.n];
     if (sec && Math.random() < sec.chance && target.isAlive) StatusEngine.apply(target, sec.status, log);
@@ -258,19 +257,16 @@ export function useBattleEngine() {
 
   // ── WIN / LOSS ──────────────────────────────────────────────────────────────
   function endBattleResult(won) {
-    const s = useBattleStore.getState();
     SFX.stopBGM();
     setTimeout(() => won ? SFX.victory?.() : SFX.defeat?.(), 200);
     if (won) {
       progress.gainXP(30);
       progress.recordWin();
-      if (progress.recordWinWithTeam) {
-        // selectedIds are the IDs currently in use by player
-        const ids = useBattleStore.getState().selectedIds || [];
-        progress.recordWinWithTeam(ids);
-      }
+      const ids = useBattleStore.getState().selectedIds || [];
+      progress.recordWinWithTeam?.(ids);
+    } else {
+      progress.recordLoss();
     }
-    else       progress.recordLoss();
     store.setActive(false);
     store.setResultData({ type: 'battle', won, xp: won ? 30 : 0 });
     store.showOverlay('Result');
@@ -279,20 +275,16 @@ export function useBattleEngine() {
   // ── TOWER WIN ───────────────────────────────────────────────────────────────
   function handleTowerWin() {
     const snap = useBattleStore.getState();
-
-    // Find which towerTeam member is currently on field
     const fieldIdx = snap.pField[0];
     const activeMember = fieldIdx !== null ? snap.myTeam[fieldIdx] : null;
     let activeTeamIdx = snap.towerActiveTeamIdx;
 
-    // Sync ALL team members HP/fainted/ult back to towerTeam
     const updatedTT = snap.towerTeam.map(t => {
       const live = snap.myTeam.find(m => m?.poke?.id === t.poke?.id);
       if (!live) return t;
       return { ...t, hp: live.hp, ult: live.ult ?? t.ult, fainted: live.fainted };
     });
 
-    // Remember which member was active (for next battle)
     if (activeMember) {
       const idx = updatedTT.findIndex(t => t.poke?.id === activeMember.poke?.id);
       if (idx !== -1) activeTeamIdx = idx;
@@ -316,18 +308,14 @@ export function useBattleEngine() {
   // ── TOWER LOSE ──────────────────────────────────────────────────────────────
   function handleTowerLose() {
     const snap = useBattleStore.getState();
-
-    // Sync all members back
     const updatedTT = snap.towerTeam.map(t => {
       const live = snap.myTeam.find(m => m?.poke?.id === t.poke?.id);
       if (!live) return t;
       return { ...t, hp: live.hp, fainted: live.fainted, ult: live.ult ?? t.ult };
     });
 
-    // Check if any alive team member remains
     const nextIdx = updatedTT.findIndex(t => !t.fainted);
     if (nextIdx !== -1) {
-      // Still have alive members — auto-send next one
       const nextMember = updatedTT[nextIdx];
       useBattleStore.setState(s => ({
         towerTeam: updatedTT,
@@ -344,20 +332,18 @@ export function useBattleEngine() {
       return;
     }
 
-    // Full team wipe — real loss
     progress.setTowerResult?.(snap.towerStreak);
     progress.gainXP(snap.towerStreak * 5);
     useBattleStore.setState({ towerTeam: updatedTT });
     store.endTowerRun();
   }
 
-  // ── PLAYER SWAP (engine action) ─────────────────────────────────────────────
+  // ── PLAYER SWAP ─────────────────────────────────────────────────────────────
   const executePlayerSwap = useCallback((fieldPos, newTeamIdx, callback) => {
     const s      = useBattleStore.getState();
     const myTeam = hydrateTeam(s.myTeam);
     const oldIdx = s.pField[fieldPos];
 
-    // REGENERATOR: heal leaving member
     if (oldIdx !== null && myTeam[oldIdx] && !myTeam[oldIdx].fainted) {
       const leaving = myTeam[oldIdx];
       if (leaving.ability?.id === 'REGENERATOR') {
@@ -372,72 +358,134 @@ export function useBattleEngine() {
     newField[fieldPos] = newTeamIdx;
     store.setPField(newField);
 
-    // Track for tower
-    if (s.towerActive) {
-      store.setTowerActiveTeamIdx(newTeamIdx);
-    }
+    if (s.towerActive) store.setTowerActiveTeamIdx(newTeamIdx);
 
     log('🔄 ' + s.myTeam[newTeamIdx]?.poke?.name + ' دخل المعركة!', 'sys');
     callback?.();
   }, [store, log]);
 
-  // ── 2v2 DUAL TURN ───────────────────────────────────────────────────────────
+  // ══════════════════════════════════════════
+  // 2v2 DUAL TURN — Speed-based interleaved ordering
+  //
+  // All 4 combatants attack in descending speed order
+  // (Replaces: player0→player1→enemy0→enemy1 fixed order)
+  // ══════════════════════════════════════════
   const executeDualTurn = useCallback(() => {
     const s = useBattleStore.getState();
     if (!s.active) return;
     store.setPTurn(false);
     store.setTurnTimer(30);
 
-    const spd = (teamPlain, field, fi) => {
+    // ── Build speed-ordered action queue ─────────────────────────────────────
+    const getSpd = (teamPlain, field, fi) => {
       const idx = field[fi];
-      if (idx === null) return 0;
+      if (idx === null || idx === undefined) return -1;
       const m = teamPlain[idx];
-      return m && !m.fainted ? BattleMember.fromPlain(m).effStats.spd : 0;
+      if (!m || m.fainted) return -1;
+      return BattleMember.fromPlain(m).effStats.spd;
     };
-    const [first, second] = spd(s.myTeam, s.pField, 0) >= spd(s.myTeam, s.pField, 1) ? [0,1] : [1,0];
 
-    // Each slot is either: SWAP | ATTACK | skip (fainted/null)
-    function resolveSlot(fi, cb) {
-      const st      = useBattleStore.getState();
-      const swapIdx = st.pendingSwaps[fi];
-      if (swapIdx !== null && swapIdx !== undefined) {
-        executePlayerSwap(fi, swapIdx, () => { store.clearPendingSlot(fi); cb(null); });
-      } else {
-        executePlayerHit(fi, cb);
-      }
+    const actions = [];
+
+    // Player slots
+    for (let fi = 0; fi < 2; fi++) {
+      const spd = getSpd(s.myTeam, s.pField, fi);
+      if (spd < 0) continue;
+      // Swap actions always go before attacks (priority mechanic)
+      const isSwap = (s.pendingSwaps[fi] !== null && s.pendingSwaps[fi] !== undefined);
+      actions.push({ side: 'player', fi, spd: isSwap ? spd + 9999 : spd });
     }
 
-    resolveSlot(first, (r0) => {
-      if (r0 === 'win')  { setTimeout(() => endBattleResult(true),  800); return; }
-      if (r0 === 'lose') { setTimeout(() => endBattleResult(false), 800); return; }
-      setTimeout(() => {
-        resolveSlot(second, (r1) => {
-          if (r1 === 'win')  { setTimeout(() => endBattleResult(true),  800); return; }
-          if (r1 === 'lose') { setTimeout(() => endBattleResult(false), 800); return; }
-          log('🔄 دور العدو...', 'sys');
-          setTimeout(() => {
-            executeEnemyHit(0, (re0) => {
-              if (re0 === 'lose') { setTimeout(() => endBattleResult(false), 800); return; }
-              if (re0 === 'win')  { setTimeout(() => endBattleResult(true),  800); return; }
-              setTimeout(() => {
-                executeEnemyHit(1, (re1) => {
-                  if (re1 === 'lose') { setTimeout(() => endBattleResult(false), 800); return; }
-                  if (re1 === 'win')  { setTimeout(() => endBattleResult(true),  800); return; }
-                  doEndOfTurn((r) => {
-                    if (r === 'win')  { setTimeout(() => endBattleResult(true),  800); return; }
-                    if (r === 'lose') { setTimeout(() => endBattleResult(false), 800); return; }
-                    setTimeout(() => store.setPTurn(true), 200);
-                  });
-                });
-              }, 500);
-            });
-          }, 600);
-        });
-      }, 500);
+    // Enemy slots
+    for (let fi = 0; fi < 2; fi++) {
+      const spd = getSpd(s.enTeam, s.eField, fi);
+      if (spd < 0) continue;
+      actions.push({ side: 'enemy', fi, spd });
+    }
+
+    // Sort descending by speed (ties broken randomly for fairness)
+    actions.sort((a, b) => {
+      if (b.spd !== a.spd) return b.spd - a.spd;
+      return Math.random() < 0.5 ? -1 : 1;
     });
+
+    if (actions.length === 0) {
+      doEndOfTurn((r) => {
+        if (r === 'win')  { setTimeout(() => endBattleResult(true),  800); return; }
+        if (r === 'lose') { setTimeout(() => endBattleResult(false), 800); return; }
+        setTimeout(() => store.setPTurn(true), 200);
+      });
+      return;
+    }
+
+    // ── Execute each action in speed order ────────────────────────────────────
+    function executeNext(idx) {
+      if (idx >= actions.length) {
+        // All attacks done — end of turn
+        doEndOfTurn((r) => {
+          if (r === 'win')  { setTimeout(() => endBattleResult(true),  800); return; }
+          if (r === 'lose') { setTimeout(() => endBattleResult(false), 800); return; }
+          setTimeout(() => store.setPTurn(true), 200);
+        });
+        return;
+      }
+
+      const action = actions[idx];
+      const delay  = idx === 0 ? 0 : 500;
+
+      setTimeout(() => {
+        // Check if the actor is still alive before executing
+        const cur = useBattleStore.getState();
+
+        if (action.side === 'player') {
+          const fi     = action.fi;
+          const slotIdx = cur.pField[fi];
+          if (slotIdx === null || cur.myTeam[slotIdx]?.fainted) {
+            executeNext(idx + 1); return;
+          }
+
+          const isSwap = cur.pendingSwaps[fi] !== null && cur.pendingSwaps[fi] !== undefined;
+          if (isSwap) {
+            executePlayerSwap(fi, cur.pendingSwaps[fi], () => {
+              store.clearPendingSlot(fi);
+              executeNext(idx + 1);
+            });
+          } else {
+            executePlayerHit(fi, (r) => {
+              if (r === 'win')  { setTimeout(() => endBattleResult(true),  800); return; }
+              if (r === 'lose') { setTimeout(() => endBattleResult(false), 800); return; }
+              executeNext(idx + 1);
+            });
+          }
+
+        } else {
+          // enemy
+          const fi      = action.fi;
+          const slotIdx = cur.eField[fi];
+          if (slotIdx === null || cur.enTeam[slotIdx]?.fainted) {
+            executeNext(idx + 1); return;
+          }
+
+          executeEnemyHit(fi, (r) => {
+            if (r === 'lose') { setTimeout(() => endBattleResult(false), 800); return; }
+            if (r === 'win')  { setTimeout(() => endBattleResult(true),  800); return; }
+            executeNext(idx + 1);
+          });
+        }
+      }, delay);
+    }
+
+    log('⚡ ترتيب السرعة: ' + actions.map(a => {
+      const cur = useBattleStore.getState();
+      const idx = a.side === 'player' ? cur.pField[a.fi] : cur.eField[a.fi];
+      const team = a.side === 'player' ? cur.myTeam : cur.enTeam;
+      return (idx !== null ? team[idx]?.poke?.name : '?') + '(' + a.spd + ')';
+    }).join(' → '), 'sys');
+
+    executeNext(0);
   }, [executePlayerHit, executeEnemyHit, executePlayerSwap, store, log]);
 
-  // ── TOWER TURN (attack) ─────────────────────────────────────────────────────
+  // ── TOWER TURN ───────────────────────────────────────────────────────────────
   const executeTowerTurn = useCallback((moveIdx) => {
     const s = useBattleStore.getState();
     if (!s.active) return;
@@ -463,7 +511,7 @@ export function useBattleEngine() {
     });
   }, [executePlayerHit, executeEnemyHit, store]);
 
-  // ── TOWER SWAP (costs turn — enemy attacks after) ───────────────────────────
+  // ── TOWER SWAP ───────────────────────────────────────────────────────────────
   const executeTowerSwap = useCallback((newTeamIdx) => {
     const s = useBattleStore.getState();
     if (!s.active || !s.pTurn) return;

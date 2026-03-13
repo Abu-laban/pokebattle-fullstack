@@ -336,7 +336,7 @@
   background: rgba(15, 20, 40, 1);
   border: 3px solid var(--card-color, #4FC3F7);
   border-radius: 24px;
-  z-index: 101;
+  z-index: 9999;
   pointer-events: none;
   animation: hoverCardAppear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9), 0 0 60px var(--card-color, #4FC3F7);
@@ -346,12 +346,12 @@
 
 .hoverCardHeader {
   position: relative;
-  height: 180px;
-  background: linear-gradient(135deg, var(--card-color, #4FC3F7) 0%, var(--card-color, #4FC3F7) 0%, transparent 70%);
+  height: 150px;
+  background: linear-gradient(135deg, var(--card-color, #4FC3F7) 0%, rgba(15,20,40,0.6) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 25px;
+  padding: 16px;
   overflow: hidden;
 }
 
@@ -381,8 +381,8 @@
 }
 
 .hoverCardContent {
-  padding: 25px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(0, 0, 0, 0.3) 100%);
+  padding: 20px 25px 25px;
+  background: transparent;
 }
 
 .hoverCardName {
@@ -404,10 +404,10 @@
 .hoverCardStats {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 18px;
-  padding: 14px;
-  background: rgba(255, 255, 255, 0.06);
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.07);
   border-radius: 14px;
   border-left: 4px solid var(--card-color, #4FC3F7);
 }

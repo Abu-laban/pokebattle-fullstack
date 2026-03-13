@@ -4,5 +4,6 @@ export { BattleField }   from './BattleField.js';
 export { Weather, WEATHER_INFO } from './Weather.js';
 export { DamageEngine }  from './DamageEngine.js';
 export { StatusEngine, STATUS_AR, STAT_AR } from './StatusEngine.js';
+export { AIEngine }         from './AIEngine.js';
 export { SFX, playTypeSound } from './audio.js';
 export { loadSpriteWithFallback, getSpriteChain } from './sprites.js';

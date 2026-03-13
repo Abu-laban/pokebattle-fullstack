@@ -186,7 +186,7 @@ export const useProgressStore = create(
 
       // compute level based on xp (same formula as player)
       pokeLevel(id) {
-        const xp = get().pokeXp[id] || 0;
+        let xp = get().pokeXp[id] || 0;
         let lvl = 1;
         while (xp >= xpForLevel(lvl)) {
           xp -= xpForLevel(lvl);
