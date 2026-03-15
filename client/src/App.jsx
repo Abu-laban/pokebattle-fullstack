@@ -32,12 +32,30 @@ export default function App() {
   const screen  = useBattleStore(s => s.screen);
   const weather = useBattleStore(s => s.weather);
   const setScreen = useBattleStore(s => s.setScreen);
-  const { user, restoreSession, logout } = useAuthStore();
+  const { user, restoreSession, logout, loginWithToken } = useAuthStore();
 
   const [notifications, setNotifications] = useState([]);
 
-  // Restore JWT session on startup
-  useEffect(() => { restoreSession(); }, []);
+  // Restore JWT session on startup + handle OAuth callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthToken = params.get('token');
+    const oauthUser  = params.get('user');
+    const oauthError = params.get('error');
+
+    if (oauthToken && oauthUser) {
+      try {
+        loginWithToken(oauthToken, JSON.parse(decodeURIComponent(oauthUser)));
+        window.history.replaceState({}, '', '/');
+        setScreen('selection');
+        return;
+      } catch {}
+    }
+    if (oauthError) {
+      window.history.replaceState({}, '', '/');
+    }
+    restoreSession();
+  }, []);
 
   useEffect(() => {
     document.body.classList.remove('weather-sun','weather-rain','weather-sand','weather-hail');

@@ -1,0 +1,254 @@
+/* ══════════════════════════════════════════
+   PokeHoverCard — Shared popup styles
+   ══════════════════════════════════════════ */
+
+/* ── Overlay ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.88);
+  z-index: 9998;
+  pointer-events: none;
+  animation: overlayAppear 0.18s ease-out;
+}
+
+/* ── Card ── */
+.card {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 340px;
+  max-height: 90vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-radius: 18px;
+  z-index: 9999;
+  pointer-events: none;
+  scrollbar-width: none;
+  animation: popupAppear 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow:
+    0 24px 64px rgba(0,0,0,0.95),
+    0 0 40px color-mix(in srgb, var(--accent, #4FC3F7) 30%, transparent);
+}
+.card::-webkit-scrollbar { display: none; }
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+}
+.sprite {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.8));
+}
+.headerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+.name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: #ffffff;
+  letter-spacing: 1px;
+  line-height: 1.4;
+  word-break: break-word;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--accent, #4FC3F7) 60%, transparent);
+}
+.types {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.meta {
+  display: flex;
+  gap: 10px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 11px;
+  color: rgba(255,255,255,0.55);
+  flex-wrap: wrap;
+}
+
+/* ── Stat bars ── */
+.stats {
+  padding: 14px 18px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.statRow {
+  display: grid;
+  grid-template-columns: 64px 36px 1fr;
+  align-items: center;
+  gap: 8px;
+}
+.statLabel {
+  font-family: 'Cairo', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.60);
+  text-align: right;
+  letter-spacing: 0.3px;
+}
+.statVal {
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  color: #ffffff;
+}
+.barTrack {
+  height: 7px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.barFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+  min-width: 3px;
+}
+
+/* ── Moves ── */
+.moves {
+  padding: 12px 18px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.sectionTitle {
+  font-family: 'Cairo', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.40);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  text-align: right;
+}
+.moveGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+.moveCard {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.moveUlt {
+  background: rgba(255, 214, 0, 0.08);
+  border-color: rgba(255, 214, 0, 0.30);
+}
+.moveName {
+  font-family: 'Cairo', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.90);
+  line-height: 1.3;
+  word-break: break-word;
+}
+.moveUlt .moveName { color: #FFD600; }
+.moveBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+.movePow {
+  font-family: 'Cairo', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.70);
+}
+.moveUlt .movePow { color: #FFD600; }
+.moveStatus {
+  font-family: 'Cairo', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.40);
+  letter-spacing: 0.5px;
+}
+
+/* ── Type matchups ── */
+.matchups {
+  padding: 12px 18px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.matchupRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.matchupLabel {
+  font-family: 'Cairo', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.40);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-align: right;
+}
+.matchupTypes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.matchupBadge {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.mulX      { font-family:'Cairo',sans-serif; font-size:9px;  font-weight:700; color:#FF5252; line-height:1; }
+.mulHalf   { font-family:'Cairo',sans-serif; font-size:10px; font-weight:700; color:#69F0AE; line-height:1; }
+.mulImmune { font-family:'Cairo',sans-serif; font-size:10px; font-weight:700; color:#40C4FF; line-height:1; }
+
+/* ── Ability ── */
+.ability {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 18px 16px;
+  background: rgba(255,255,255,0.03);
+}
+.abilityIcon { font-size: 20px; flex-shrink: 0; line-height: 1.2; }
+.abilityName {
+  font-family: 'Cairo', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent, #4FC3F7);
+  margin-bottom: 3px;
+}
+.abilityDesc {
+  font-family: 'Cairo', sans-serif;
+  font-size: 11px;
+  color: rgba(255,255,255,0.60);
+  line-height: 1.5;
+}
+
+/* ── Animations ── */
+@keyframes popupAppear {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.88); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes overlayAppear {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

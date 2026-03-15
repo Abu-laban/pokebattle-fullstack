@@ -8,9 +8,10 @@ import { DEX }              from '../../data/dex.js';
 import { PokeSprite }       from '../UI/PokeSprite.jsx';
 import { TypeBadge }        from '../UI/TypeBadge.jsx';
 import { StatsOverlay }     from '../Overlays/StatsOverlay.jsx';
+import { PokeHoverCard }    from '../UI/PokeHoverCard.jsx';
+import { getPokeAbility }   from '../../data/abilities.js';
+import { POKE_STATS }       from '../../data/pokeStats.js';
 import styles               from './SelectionScreen.module.css';
-import { getPokeAbility }  from '../../data/abilities.js';
-import { POKE_STATS }      from '../../data/pokeStats.js';
 
 const GEN_RANGES = {
   all: [1, 999],
@@ -263,86 +264,6 @@ function PokeGrid({ pokes, selectedIds, unlockedFn, onSelect }) {
         );
       })}
     </div>
-  );
-}
-
-// ── Single pokemon card ───────────────────────────────────────────────────────
-function PokeHoverCard({ poke }) {
-  const stats   = POKE_STATS[poke.id];
-  const ability = getPokeAbility(poke.id);
-  const progress = useProgressStore();
-  
-  const bst = stats ? Object.values(stats).reduce((a, b) => a + b, 0) + poke.hp : poke.hp;
-  const winsWithPoke = progress.winsWithPoke[poke.id] || 0;
-  const pokeLevel = progress.pokeLevel(poke.id);
-  
-  // Get primary type for background color
-  const primaryType = poke.types[0];
-  const typeColors = {
-    'FIRE': '#FF6B35', 'WATER': '#4FC3F7', 'GRASS': '#66BB6A', 'ELECTRIC': '#FFD600',
-    'ICE': '#81D4FA', 'FIGHTING': '#E53935', 'POISON': '#AB47BC', 'GROUND': '#A1887F',
-    'FLYING': '#5E35B1', 'PSYCHIC': '#EC407A', 'BUG': '#8BC34A', 'ROCK': '#795548',
-    'GHOST': '#757575', 'DRAGON': '#5C6BC0', 'DARK': '#424242', 'STEEL': '#B0BEC5',
-    'FAIRY': '#F06292', 'NORMAL': '#BDBDBD'
-  };
-  const bgColor = typeColors[primaryType] || '#4FC3F7';
-  
-  return (
-    <>
-      <div className={styles.hoverCardOverlay} />
-      <div 
-        className={styles.hoverCard}
-        style={{
-          '--card-color': bgColor
-        }}
-      >
-      {/* Header with gradient background */}
-      <div className={styles.hoverCardHeader}>
-        <PokeSprite id={poke.id} name={poke.name} size={120} className={styles.hoverCardImg} />
-      </div>
-      
-      {/* Content section */}
-      <div className={styles.hoverCardContent}>
-        <div className={styles.hoverCardName}>{poke.name}</div>
-        
-        {/* Types */}
-        <div className={styles.hoverCardTypes}>
-          {poke.types.map(t => <TypeBadge key={t} type={t} size="sm" />)}
-        </div>
-        
-        {/* Stats grid */}
-        <div className={styles.hoverCardStats}>
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>❤️ HP</span>
-            <span className={styles.statValue}>{poke.hp}</span>
-          </div>
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>⭐ BST</span>
-            <span className={styles.statValue}>{bst}</span>
-          </div>
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>📊 Lvl</span>
-            <span className={styles.statValue}>{pokeLevel}</span>
-          </div>
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>🏆 Wins</span>
-            <span className={styles.statValue}>{winsWithPoke}</span>
-          </div>
-        </div>
-        
-        {/* Ability */}
-        {ability && (
-          <div className={styles.hoverCardAbility}>
-            <span className={styles.abilityIcon}>{ability.icon}</span>
-            <div>
-              <div className={styles.abilityName}>{ability.name}</div>
-              <div className={styles.abilityDesc}>{ability.desc}</div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-    </>
   );
 }
 

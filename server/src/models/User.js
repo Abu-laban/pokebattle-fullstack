@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt   = require('bcryptjs');
+const crypto   = require('crypto');
 
 // ── Battle Stats sub-schema ────────────────────────────────────────────────
 const battleStatsSchema = new mongoose.Schema({
@@ -8,8 +9,8 @@ const battleStatsSchema = new mongoose.Schema({
   draws:         { type: Number, default: 0 },
   totalDamage:   { type: Number, default: 0 },
   superEffHits:  { type: Number, default: 0 },
-  towerBest:     { type: Number, default: 0 },   // highest tower streak
-  favPoke:       { type: String, default: null }, // most used pokémon name
+  towerBest:     { type: Number, default: 0 },
+  favPoke:       { type: String, default: null },
 }, { _id: false });
 
 // ── Main User schema ───────────────────────────────────────────────────────
@@ -23,9 +24,18 @@ const userSchema = new mongoose.Schema({
     type: String, required: true, unique: true,
     lowercase: true, trim: true,
   },
-  password: {
-    type: String, required: true, minlength: 6, select: false,
-  },
+  password: { type: String, minlength: 6, select: false },
+
+  // ── Email verification ────────────────────────────────────────────────
+  isVerified:         { type: Boolean, default: false },
+  verifyToken:        { type: String, select: false },
+  verifyTokenExpires: { type: Date,   select: false },
+
+  // ── OAuth providers ───────────────────────────────────────────────────
+  googleId:   { type: String, unique: true, sparse: true },
+  facebookId: { type: String, unique: true, sparse: true },
+  avatar:     { type: String, default: null },
+  provider:   { type: String, default: 'local' },
 
   // ── Progress ──────────────────────────────────────────────────────────
   xp:    { type: Number, default: 0 },
@@ -34,24 +44,30 @@ const userSchema = new mongoose.Schema({
   // ── Battle statistics ─────────────────────────────────────────────────
   stats: { type: battleStatsSchema, default: () => ({}) },
 
-  // ── Achievements (array of id strings) ───────────────────────────────
+  // ── Achievements ──────────────────────────────────────────────────────
   achievements: [{ type: String }],
 
-  createdAt: { type: Date, default: Date.now },
   lastLogin: { type: Date, default: Date.now },
 }, { timestamps: true });
 
 // ── Hash password before save ─────────────────────────────────────────────
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password') || !this.password) return next();
   this.password = await bcrypt.hash(this.password, 12);
   next();
 });
 
+// ── Generate email verification token ─────────────────────────────────────
+userSchema.methods.createVerifyToken = function () {
+  const token = crypto.randomBytes(32).toString('hex');
+  this.verifyToken        = crypto.createHash('sha256').update(token).digest('hex');
+  this.verifyTokenExpires = Date.now() + 24 * 60 * 60 * 1000; // 24h
+  return token; // raw token sent in email
+};
+
 // ── Level up logic ─────────────────────────────────────────────────────────
 userSchema.methods.addXP = function (amount) {
   this.xp += amount;
-  // Level formula: each level needs level * 100 XP
   while (this.xp >= this.level * 100) {
     this.xp    -= this.level * 100;
     this.level += 1;
@@ -64,11 +80,15 @@ userSchema.methods.comparePassword = async function (candidate) {
   return bcrypt.compare(candidate, this.password);
 };
 
-// ── Public profile (no password) ──────────────────────────────────────────
+// ── Public profile ─────────────────────────────────────────────────────────
 userSchema.methods.toPublic = function () {
   return {
     id:           this._id,
     username:     this.username,
+    email:        this.email,
+    avatar:       this.avatar,
+    provider:     this.provider,
+    isVerified:   this.isVerified,
     xp:           this.xp,
     level:        this.level,
     stats:        this.stats,

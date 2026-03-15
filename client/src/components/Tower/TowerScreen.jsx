@@ -9,6 +9,7 @@ import { TypeBadge }        from '../UI/TypeBadge.jsx';
 import { POKE_STATS }       from '../../data/pokeStats.js';
 import { getPokeAbility }   from '../../data/abilities.js';
 import { loadSpriteWithFallback } from '../../engine/sprites.js';
+import { PokeHoverCard }    from '../UI/PokeHoverCard.jsx';
 import styles               from './TowerScreen.module.css';
 
 const GEN_RANGES = [
@@ -187,6 +188,7 @@ function TowerSlot({ slot, index, onRemove }) {
 // ── Grid card (pick list) ────────────────────────────────────────────────────
 function TowerCard({ poke, disabled, onClick }) {
   const imgRef = useRef(null);
+  const [hovered, setHovered] = useState(false);
   useEffect(() => {
     if (imgRef.current) loadSpriteWithFallback(imgRef.current, poke.id, poke.name);
   }, [poke.id]);
@@ -199,6 +201,8 @@ function TowerCard({ poke, disabled, onClick }) {
     <div
       className={`${styles.card} ${disabled ? styles.disabled : ''}`}
       onClick={disabled ? undefined : onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <span className={styles.genTag} style={{ background: gen.color + '22', color: gen.color }}>
         {gen.label}
@@ -213,6 +217,7 @@ function TowerCard({ poke, disabled, onClick }) {
         {bst > 0 && <span className={styles.bstTag}>⭐{bst}</span>}
         {ability && <span title={ability.name}>{ability.icon}</span>}
       </div>
+      {hovered && <PokeHoverCard poke={poke} />}
     </div>
   );
 }
