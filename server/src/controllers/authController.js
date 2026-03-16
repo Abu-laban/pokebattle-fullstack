@@ -24,21 +24,30 @@ const register = async (req, res) => {
       });
 
     const user  = new User({ username, email, password, provider: 'local' });
-    const token = user.createVerifyToken();
-    await user.save();
+    const isDev = process.env.NODE_ENV !== 'production';
+    const hasSmtp = process.env.SMTP_USER && !process.env.SMTP_USER.includes('your_');
 
-    // Send verification email
-    try {
-      await sendVerificationEmail(email, username, token);
-    } catch (mailErr) {
-      console.warn('⚠️ Email send failed:', mailErr.message);
-      // Don't fail registration if email fails — still create account
+    if (isDev && !hasSmtp) {
+      // Dev mode without SMTP: auto-verify so users can login immediately
+      user.isVerified = true;
+      await user.save();
+      res.status(201).json({
+        message: 'تم إنشاء الحساب (وضع التطوير — مُفعَّل تلقائياً).',
+        devAutoVerified: true,
+      });
+    } else {
+      const token = user.createVerifyToken();
+      await user.save();
+      try {
+        await sendVerificationEmail(email, username, token);
+      } catch (mailErr) {
+        console.warn('⚠️ Email send failed:', mailErr.message);
+      }
+      res.status(201).json({
+        message: 'تم إنشاء الحساب! تحقق من بريدك الإلكتروني لتفعيل الحساب.',
+        needsVerification: true,
+      });
     }
-
-    res.status(201).json({
-      message: 'تم إنشاء الحساب! تحقق من بريدك الإلكتروني لتفعيل الحساب.',
-      needsVerification: true,
-    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -215,4 +224,44 @@ const facebookCallback = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getMe, logout, verifyEmail, resendVerification, googleCallback, facebookCallback };
+// ── POST /api/auth/auth0 ───────────────────────────────────────────────────
+// Called when Auth0 user logs in for first time — create or return profile
+const auth0Login = async (req, res) => {
+  try {
+    const { username, email, auth0Id, avatar } = req.body;
+    if (!auth0Id) return res.status(400).json({ error: 'auth0Id مطلوب' });
+
+    // Find existing user by auth0Id or email
+    let user = await User.findOne({ $or: [{ auth0Id }, ...(email ? [{ email }] : [])] });
+
+    if (user) {
+      // Update auth0Id and avatar if missing
+      if (!user.auth0Id)  { user.auth0Id = auth0Id; }
+      if (!user.avatar && avatar) { user.avatar = avatar; }
+      user.isVerified  = true;
+      user.lastLogin   = new Date();
+      await user.save({ validateBeforeSave: false });
+    } else {
+      // New user — generate unique username
+      let uname = (username || 'Trainer')
+        .replace(/[^a-zA-Z0-9_]/g, '').substring(0, 18) || 'Trainer';
+      const taken = await User.findOne({ username: uname });
+      if (taken) uname = uname.substring(0,14) + Math.floor(Math.random()*9000+1000);
+
+      user = await User.create({
+        username: uname,
+        email:    email || `auth0_${auth0Id}@noemail.com`,
+        auth0Id, avatar,
+        provider:   'auth0',
+        isVerified: true,
+      });
+    }
+
+    const token = signToken(user._id);
+    res.json({ token, user: user.toPublic() });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = { register, login, getMe, logout, verifyEmail, resendVerification, googleCallback, facebookCallback, auth0Login };

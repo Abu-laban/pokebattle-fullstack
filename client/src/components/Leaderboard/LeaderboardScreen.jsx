@@ -64,8 +64,8 @@ export function LeaderboardScreen({ onBack }) {
               <span className={styles.val}>{entry.winRate}%</span>
             </>}
             {tab === 'tower' && <>
-              <span className={styles.lv}>{entry.totalWins} wins</span>
-              <span className={styles.val}>🏰 {entry.towerBest}</span>
+              <span className={styles.lv}>🏰 برج المعارك</span>
+              <span className={styles.val}>🏆 {entry.towerBest} سلسلة</span>
             </>}
           </div>
         ))}

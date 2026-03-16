@@ -34,6 +34,10 @@ const userSchema = new mongoose.Schema({
   // ── OAuth providers ───────────────────────────────────────────────────
   googleId:   { type: String, unique: true, sparse: true },
   facebookId: { type: String, unique: true, sparse: true },
+  auth0Id:    { type: String, unique: true, sparse: true },
+  avatar:     { type: String, default: null },
+  provider:   { type: String, default: 'local' },
+  facebookId: { type: String, unique: true, sparse: true },
   avatar:     { type: String, default: null },
   provider:   { type: String, default: 'local' },
 
@@ -46,6 +50,10 @@ const userSchema = new mongoose.Schema({
 
   // ── Achievements ──────────────────────────────────────────────────────
   achievements: [{ type: String }],
+
+  // ── Local gameplay stats (poke usage & type wins) ────────────────────────
+  winsWithPoke: { type: Map, of: Number, default: {} },
+  winsByType:   { type: Map, of: Number, default: {} },
 
   lastLogin: { type: Date, default: Date.now },
 }, { timestamps: true });
@@ -93,6 +101,8 @@ userSchema.methods.toPublic = function () {
     level:        this.level,
     stats:        this.stats,
     achievements: this.achievements,
+    winsWithPoke: this.winsWithPoke ? Object.fromEntries(this.winsWithPoke) : {},
+    winsByType:   this.winsByType   ? Object.fromEntries(this.winsByType)   : {},
     createdAt:    this.createdAt,
   };
 };

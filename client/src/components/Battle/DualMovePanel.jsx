@@ -2,7 +2,22 @@
 // Swap is handled by parent via onSwapRequest
 import { useBattleStore }  from '../../store/battleStore.js';
 import { MOVE_EFFECTS }    from '../../data/moveEffects.js';
+import { MOVE_SECONDARY }  from '../../data/moveSecondary.js';
+import { SPECIAL_TYPES }   from '../../data/moves.js';
 import styles              from './DualMovePanel.module.css';
+
+const STATUS_META = {
+  BRN: { label: '🔥 حرق',    bg: '#FF6B35' },
+  PSN: { label: '☠ سُم',     bg: '#AB47BC' },
+  PAR: { label: '⚡ شلل',    bg: '#FFD600' },
+  FRZ: { label: '❄ تجميد',  bg: '#80DEEA' },
+  SLP: { label: '😴 نوم',    bg: '#90A4AE' },
+  CNF: { label: '😵 ارتباك', bg: '#EC407A' },
+};
+
+const WEATHER_LABELS = {
+  SUN: '☀️ شمس', RAIN: '🌧 مطر', SAND: '🌪 رمال', HAIL: '❄ برد',
+};
 
 const TYPE_COLORS = {
   FIRE:'#FF6B35',WATER:'#4FC3F7',GRASS:'#66BB6A',ELECTRIC:'#FFD600',
@@ -14,12 +29,15 @@ const TYPE_COLORS = {
 
 function getMoveCategory(mv) {
   const eff = MOVE_EFFECTS[mv.n];
-  if (eff?.weather) return { icon: '🌤', label: 'طقس' };
-  if (eff?.target === 'self') return { icon: '🛡', label: 'داعم' };
-  if (eff?.target === 'foe' && !mv.p) return { icon: '⚡', label: 'حالة' };
-  if (mv.p === 0) return { icon: '✨', label: 'داعم' };
-  if (mv.p > 100) return { icon: '💥', label: 'قوة عالية' };
-  return { icon: '⚔', label: 'هجوم' };
+  if (eff?.weather)               return { icon: '🌤', label: 'طقس: ' + (WEATHER_LABELS[eff.weather] || eff.weather), cat: 'weather' };
+  if (eff?.target === 'self')     return { icon: '🛡', label: 'داعم', cat: 'buff' };
+  if (eff?.target === 'foe' && !mv.p) return { icon: '⚡', label: 'حالة', cat: 'status' };
+  if (mv.p === 0)                 return { icon: '✨', label: 'داعم', cat: 'buff' };
+  const isSpecial = SPECIAL_TYPES.has(mv.t);
+  if (mv.p > 100) return { icon: isSpecial ? '💥✨' : '💥⚔', label: isSpecial ? 'خاص قوي' : 'جسدي قوي', cat: isSpecial ? 'special' : 'physical' };
+  return isSpecial
+    ? { icon: '✨', label: 'خاص', cat: 'special' }
+    : { icon: '⚔', label: 'جسدي', cat: 'physical' };
 }
 
 export function DualMovePanel({ fieldPos, onMoveChosen, onSwapRequest }) {
@@ -98,6 +116,8 @@ export function DualMovePanel({ fieldPos, onMoveChosen, onSwapRequest }) {
               const color   = TYPE_COLORS[mv.t] || '#888';
               const blocked = mv.u && member.ult < 100;
               const cat     = getMoveCategory(mv);
+              const sec     = MOVE_SECONDARY[mv.n];
+              const statusMeta = sec ? STATUS_META[sec.status] : null;
               return (
                 <button key={i}
                   className={`${styles.mv} ${mv.u ? styles.ultMv : ''} ${blocked ? styles.blocked : ''}`}
@@ -111,9 +131,20 @@ export function DualMovePanel({ fieldPos, onMoveChosen, onSwapRequest }) {
                     <span className={styles.mvType} style={{ background: color }}>{mv.t}</span>
                   </div>
                   <span className={styles.mvName}>{mv.n}</span>
-                  <span className={styles.mvPwr}>
-                    {mv.p > 0 ? `قوة ${mv.p}` : cat.label}
-                  </span>
+                  <div className={styles.mvBottom}>
+                    <span className={styles.mvPwr}>
+                      {mv.p > 0 ? `قوة ${mv.p}` : cat.label}
+                    </span>
+                    {statusMeta && (
+                      <span
+                        className={styles.mvEffect}
+                        style={{ background: statusMeta.bg + '30', color: statusMeta.bg, border: `1px solid ${statusMeta.bg}55` }}
+                        title={`${Math.round(sec.chance * 100)}% احتمال`}
+                      >
+                        {statusMeta.label} {Math.round(sec.chance * 100)}%
+                      </span>
+                    )}
+                  </div>
                   {mv.u && (
                     <div className={styles.ultProg}>
                       <div style={{ width: member.ult + '%', height: '100%',

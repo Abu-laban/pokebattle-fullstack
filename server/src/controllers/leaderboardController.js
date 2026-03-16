@@ -1,5 +1,4 @@
-const User         = require('../models/User');
-const BattleRecord = require('../models/BattleRecord');
+const User = require('../models/User');
 
 // ── GET /api/leaderboard/xp ────────────────────────────────────────────────
 const getXPLeaderboard = async (req, res) => {
@@ -28,24 +27,18 @@ const getXPLeaderboard = async (req, res) => {
 // ── GET /api/leaderboard/tower ─────────────────────────────────────────────
 const getTowerLeaderboard = async (req, res) => {
   try {
-    // Best tower streak per user
-    const records = await BattleRecord.aggregate([
-      { $match: { mode: 'tower' } },
-      { $group: {
-          _id:        '$userId',
-          username:   { $first: '$username' },
-          towerBest:  { $max: '$towerStreak' },
-          totalWins:  { $sum: { $cond: [{ $eq: ['$result','win'] }, 1, 0] } },
-      }},
-      { $sort: { towerBest: -1 } },
-      { $limit: 100 },
-    ]);
+    const users = await User.find({ 'stats.towerBest': { $gt: 0 } })
+      .sort({ 'stats.towerBest': -1 })
+      .limit(100)
+      .select('username level stats.towerBest stats.wins')
+      .lean();
 
-    const board = records.map((r, i) => ({
+    const board = users.map((u, i) => ({
       rank:      i + 1,
-      username:  r.username,
-      towerBest: r.towerBest,
-      totalWins: r.totalWins,
+      username:  u.username,
+      level:     u.level,
+      towerBest: u.stats?.towerBest ?? 0,
+      totalWins: u.stats?.wins      ?? 0,  // normal battle wins (for reference)
     }));
 
     res.json({ board });

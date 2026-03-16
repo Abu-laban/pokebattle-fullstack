@@ -23,8 +23,12 @@ export function AuthScreen({ onClose }) {
       const res = await login(form.email, form.password);
       if (res.success) onClose?.();
     } else {
-      await register(form.username, form.email, form.password);
-      // stays on screen showing verification notice
+      const res = await register(form.username, form.email, form.password);
+      if (res.devAutoVerified) {
+        // Dev mode: auto-verified, go to login
+        switchMode('login');
+      }
+      // otherwise stays showing verification notice
     }
   };
 

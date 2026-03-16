@@ -198,9 +198,17 @@ export class AIEngine {
   }
 
   // ── Determine difficulty based on tower streak / game context ────────────
-  static getDifficulty(towerStreak = 0) {
-    if (towerStreak >= 15) return 'hard';
-    if (towerStreak >= 5)  return 'normal';
+  // level: trainer level (1-50+), towerStreak: for tower mode
+  static getDifficulty(towerStreak = 0, playerLevel = 1) {
+    // Tower: streak-based scaling
+    if (towerStreak > 0) {
+      if (towerStreak >= 15) return 'hard';
+      if (towerStreak >= 5)  return 'normal';
+      return 'easy';
+    }
+    // Normal battle: scale with player level
+    if (playerLevel >= 25) return 'hard';
+    if (playerLevel >= 10) return 'normal';
     return 'easy';
   }
 }

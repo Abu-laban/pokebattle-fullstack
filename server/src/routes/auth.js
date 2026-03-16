@@ -3,7 +3,7 @@ const rateLimit = require('express-rate-limit');
 const {
   register, login, getMe, logout,
   verifyEmail, resendVerification,
-  googleCallback, facebookCallback,
+  googleCallback, facebookCallback, auth0Login,
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 
@@ -19,6 +19,7 @@ router.post('/logout',         logout);
 router.get ('/me',             protect,     getMe);
 router.get ('/verify/:token',  verifyEmail);
 router.post('/resend-verify',  authLimiter, resendVerification);
+router.post('/auth0',          authLimiter, auth0Login); // Auth0 profile sync
 
 // ── Google OAuth ──────────────────────────────────────────────────────────
 router.get('/google', (req, res) => {

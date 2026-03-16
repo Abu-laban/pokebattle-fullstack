@@ -1,12 +1,19 @@
-import { create }  from 'zustand';
-import { AuthAPI } from '../services/api.js';
+import { create }            from 'zustand';
+import { AuthAPI }           from '../services/api.js';
+import { useProgressStore }  from './progressStore.js';
 
-// Token stored only in memory (not localStorage)
-let _token = sessionStorage.getItem('pb_token') || null;
+function resetProgress() {
+  localStorage.removeItem('pokebattle-progress');
+}
+
+function syncProgress(user) {
+  if (!user) return;
+  useProgressStore.getState().syncFromServer(user);
+}
 
 export const useAuthStore = create((set, get) => ({
   user:    null,
-  token:   _token,
+  token:   null,
   loading: false,
   error:   null,
   needsVerification: false,
@@ -16,8 +23,12 @@ export const useAuthStore = create((set, get) => ({
     set({ loading: true, error: null, needsVerification: false });
     try {
       const data = await AuthAPI.register(username, email, password);
-      set({ loading: false, needsVerification: true, verificationEmail: email });
-      return { success: true, needsVerification: true };
+      set({
+        loading: false,
+        needsVerification: !data.devAutoVerified,
+        verificationEmail: email,
+      });
+      return { success: true, devAutoVerified: data.devAutoVerified, needsVerification: !data.devAutoVerified };
     } catch (err) {
       set({ error: err.message, loading: false });
       return { success: false };
@@ -28,61 +39,71 @@ export const useAuthStore = create((set, get) => ({
     set({ loading: true, error: null, needsVerification: false });
     try {
       const { token, user } = await AuthAPI.login(email, password);
-      _token = token;
       sessionStorage.setItem('pb_token', token);
-      // Fetch fresh user data from server
-      const freshUser = await AuthAPI.me().catch(() => user);
-      set({ token, user: freshUser?.user || user, loading: false });
+      resetProgress();
+      let freshUser = user;
+      try { freshUser = (await AuthAPI.me()).user; } catch {}
+      set({ token, user: freshUser, loading: false });
+      syncProgress(freshUser);
       return { success: true };
     } catch (err) {
       const isVerify = err.needsVerification;
-      set({
-        error: err.message,
-        loading: false,
-        needsVerification: isVerify || false,
-        verificationEmail: isVerify ? email : null,
-      });
+      set({ error: err.message, loading: false, needsVerification: isVerify || false, verificationEmail: isVerify ? email : null });
       return { success: false, needsVerification: isVerify };
     }
   },
 
   loginWithToken: async (token, userData) => {
-    _token = token;
     sessionStorage.setItem('pb_token', token);
+    resetProgress();
     set({ token, user: userData, loading: false, error: null });
-    // Fetch fresh from server
     try {
       const res = await AuthAPI.me();
       set({ user: res.user });
+      syncProgress(res.user);
     } catch {}
   },
 
   restoreSession: async () => {
     const token = sessionStorage.getItem('pb_token');
-    if (!token) return;
-    _token = token;
+    if (!token) {
+      resetProgress();
+      useProgressStore.getState().resetAll?.();
+      set({ user: null, token: null });
+      return;
+    }
     try {
       const { user } = await AuthAPI.me();
       set({ user, token });
+      syncProgress(user);
     } catch {
       sessionStorage.removeItem('pb_token');
-      _token = null;
+      resetProgress();
+      useProgressStore.getState().resetAll?.();
       set({ user: null, token: null });
     }
   },
 
-  resendVerification: async (email) => {
+  refreshUser: async () => {
     try {
-      await AuthAPI.resendVerify(email);
-      return true;
-    } catch { return false; }
+      const { user } = await AuthAPI.me();
+      set({ user });
+      syncProgress(user);
+      return user;
+    } catch { return null; }
+  },
+
+  resendVerification: async (email) => {
+    try { await AuthAPI.resendVerify(email); return true; }
+    catch { return false; }
   },
 
   logout: async () => {
     try { await AuthAPI.logout(); } catch {}
     sessionStorage.removeItem('pb_token');
-    _token = null;
-    set({ user: null, token: null, needsVerification: false });
+    resetProgress();
+    useProgressStore.getState().resetAll?.();
+    set({ user: null, token: null, loading: false, error: null, needsVerification: false, verificationEmail: null });
   },
 
   clearError: () => set({ error: null, needsVerification: false }),

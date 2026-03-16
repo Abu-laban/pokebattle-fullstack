@@ -1,42 +1,48 @@
 require('dotenv').config();
-const express  = require('express');
-const cors     = require('cors');
-const helmet   = require('helmet');
-const morgan   = require('morgan');
-const path     = require('path');
+const express      = require('express');
+const cors         = require('cors');
+const helmet       = require('helmet');
+const morgan       = require('morgan');
+const path         = require('path');
 
-const connectDB  = require('./config/db');
-const authRouter = require('./routes/auth');
-const userRouter = require('./routes/user');
-const leaderRouter = require('./routes/leaderboard');
-const battleRouter = require('./routes/battle');
+const connectDB      = require('./config/db');
+const authRouter     = require('./routes/auth');
+const userRouter     = require('./routes/user');
+const leaderRouter   = require('./routes/leaderboard');
+const battleRouter   = require('./routes/battle');
 
 const app  = express();
 const PORT = process.env.PORT || 5000;
 
-// ── Connect Database ──────────────────────────────────────────────────────
 connectDB();
 
-// ── Middleware ────────────────────────────────────────────────────────────
+// Trust proxy (required for Codespace, Heroku, etc.)
+app.set('trust proxy', 1);
+
 app.use(helmet());
 app.use(cors({
   origin: [
-    process.env.CLIENT_URL || 'http://localhost:5173',
+    process.env.CLIENT_URL || 'http://localhost:3000',
     'http://localhost:3000',
     'http://localhost:5173',
   ],
   credentials: true,
 }));
+
+// Cookie parser (optional — only if installed)
+try {
+  const cookieParser = require('cookie-parser');
+  app.use(cookieParser());
+} catch {}
+
 app.use(morgan('dev'));
 app.use(express.json());
 
-// ── API Routes ────────────────────────────────────────────────────────────
 app.use('/api/auth',        authRouter);
 app.use('/api/user',        userRouter);
 app.use('/api/leaderboard', leaderRouter);
 app.use('/api/battle',      battleRouter);
 
-// ── Serve React build in production ──────────────────────────────────────
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../../client/dist')));
   app.get('*', (req, res) =>
@@ -44,7 +50,6 @@ if (process.env.NODE_ENV === 'production') {
   );
 }
 
-// ── Global error handler ──────────────────────────────────────────────────
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.status || 500).json({ error: err.message || 'Server Error' });

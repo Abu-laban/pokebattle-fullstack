@@ -3,45 +3,70 @@
 // ══════════════════════════════════════════
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { DEX } from '../data/dex.js';
+import { DEX }        from '../data/dex.js';
 import { EVOLUTIONS } from '../data/evolutionData.js';
+import { POKE_STATS } from '../data/pokeStats.js';
 
-// ── Unlock rules configuration ─────────────────────────────────────────────
-// You can expand this object with explicit conditions for specific pokémon.
-// Each entry may contain any of these keys:
-//   minLevel: number            // require player level
-//   defeatType: {type,count}     // defeat N pokémon of given type
-//   winWithPoke: {id,count}      // win N battles while using a specific poke
-//   winWithTeam: {ids,count}     // win N battles with exact team composition
-//   towerBest: number            // achieve tower streak
-//   megaEvent: true              // available only when special event activated
-// only the rules defined here override the default level blocks.
-export const UNLOCK_RULES = {
-  // demonstration examples
-  150: { defeatType: { type: 'PSYCHIC', count: 10 } }, // Mewtwo unlocks after 10 Psychic defeats
-  25: { winWithPoke: { id: 150, count: 5 } }, // Pikachu unlocks by winning 5 times with Mewtwo
-  813: { megaEvent: true },                  // Charizard‑Mega‑X locked until event
-  814: { megaEvent: true },                  // Charizard‑Mega‑Y locked until event
-  // ...you can add more rules here manually
-};
+// ── Helper: get BST for a pokemon ─────────────────────────────────────────
+function getBST(pokeId, hp) {
+  const s = POKE_STATS[pokeId];
+  if (!s) return 300;
+  return Object.values(s).reduce((a, b) => a + b, 0) + (hp || 0);
+}
 
-// merge evolution requirements into unlock rules automatically
-Object.entries(EVOLUTIONS).forEach(([childId, info]) => {
-  const id = parseInt(childId, 10);
-  if (!UNLOCK_RULES[id]) UNLOCK_RULES[id] = {};
-  // require parent pokemon to reach specific level (or default to half of evolution level)
-  const reqLevel = info.level > 0 ? Math.ceil(info.level / 2) : 5;
-  UNLOCK_RULES[id].pokeLevel = { id: info.parent, level: reqLevel };
-  // also require at least one win with parent for confirmation
-  UNLOCK_RULES[id].winWithPoke = { id: info.parent, count: 1 };
-});
+// ── Evolution stage helper ─────────────────────────────────────────────────
+function getEvoStage(id) {
+  const isChild = EVOLUTIONS[id];
+  if (!isChild) return 0;                        // base form
+  const isGrandchild = EVOLUTIONS[isChild.parent];
+  return isGrandchild ? 2 : 1;
+}
 
-// automatically lock all mega/primal/ultra forms as event content
-DEX.forEach(p => {
-  if (/mega|primal|ultra|zen/i.test(p.name)) {
-    if (!UNLOCK_RULES[p.id]) UNLOCK_RULES[p.id] = {};
-    UNLOCK_RULES[p.id].megaEvent = true;
+// ── Unlock rules (realistic progression) ──────────────────────────────────
+// Base forms BST < 420   → always free
+// Base forms BST 420–499 → player level 5
+// Base forms BST 500+    → player level 15
+// 1st evolution          → 2 wins with parent + parent poke level 5
+// Final evolution        → 3 wins with parent + parent poke level 8
+// Legendary BST 580+     → level 20 + 5 type defeats
+// Mythical BST 620+      → level 30 + tower streak 5 + 5 type defeats
+// Mega/Primal/Ultra      → event locked
+export const UNLOCK_RULES = {};
+
+DEX.forEach(poke => {
+  const bst   = getBST(poke.id, poke.hp);
+  const stage = getEvoStage(poke.id);
+  const evo   = EVOLUTIONS[poke.id];
+  const isMega = /mega|primal|ultra|zen/i.test(poke.name);
+
+  if (isMega) { UNLOCK_RULES[poke.id] = { megaEvent: true }; return; }
+
+  const hasChildren = DEX.some(p => EVOLUTIONS[p.id]?.parent === poke.id);
+  const isLegendary = bst >= 580 && !evo && !hasChildren;
+
+  if (isLegendary) {
+    const mainType = poke.types[0];
+    UNLOCK_RULES[poke.id] = bst >= 620
+      ? { minLevel: 30, towerBest: 5,  defeatType: { type: mainType, count: 5 } }
+      : { minLevel: 20, defeatType: { type: mainType, count: 5 } };
+    return;
   }
+
+  if (evo) {
+    const pid = evo.parent;
+    // Final evolutions also need a rank gate based on BST
+    const rankReq = bst >= 500 ? 'adept' : bst >= 420 ? 'novice' : null;
+    const base = stage === 1
+      ? { winWithPoke: { id: pid, count: 2 }, pokeLevel: { id: pid, level: 5 } }
+      : { winWithPoke: { id: pid, count: 3 }, pokeLevel: { id: pid, level: 8 } };
+    UNLOCK_RULES[poke.id] = rankReq ? { ...base, minRank: rankReq } : base;
+    return;
+  }
+
+  // Base forms by BST + rank
+  if (bst >= 500)      UNLOCK_RULES[poke.id] = { minLevel: 15, minRank: 'adept'  };
+  else if (bst >= 420) UNLOCK_RULES[poke.id] = { minLevel: 5,  minRank: 'novice' };
+  // BST < 420: free, no rule
 });
 
 export function xpForLevel(lvl) {
@@ -60,7 +85,7 @@ export function getTrainerRank(level) {
 }
 
 // Strict unlock tiers: only allow pokemon in specified range per rank
-const RANK_POKE_TIERS = {
+export const RANK_POKE_TIERS = {
   'beginner': { min: 1, max: 10 },      // only first 10 pokemon
   'novice':   { min: 1, max: 25 },      // up to around 25
   'adept':    { min: 1, max: 50 },      // first generation
@@ -110,6 +135,62 @@ export const useProgressStore = create(
 
       unlockedAchievements: [],
 
+      // ── Reset all progress (on logout) ────────────────────────────────────
+      resetAll() {
+        // Save local gameplay data keyed by user before reset
+        const s = get();
+        if (s._userId) {
+          try {
+            localStorage.setItem(
+              `pb-local-${s._userId}`,
+              JSON.stringify({ winsWithPoke: s.winsWithPoke, winsByType: s.winsByType, winsWithTeam: s.winsWithTeam, pokeXp: s.pokeXp, unlockedPokes: s.unlockedPokes })
+            );
+          } catch {}
+        }
+        set({
+          _userId: null,
+          level: 1, xp: 0, wins: 0, losses: 0,
+          totalDmg: 0, superEffHits: 0, totalXp: 0,
+          towerBest: 0, towerCurrent: 0,
+          winsByType: {}, winsWithPoke: {}, winsWithTeam: {},
+          pokeXp: {}, unlockedPokes: [],
+          megaEventActive: false, unlockedAchievements: [],
+        });
+      },
+
+      // ── Sync from server user object ──────────────────────────────────────
+      syncFromServer(serverUser) {
+        if (!serverUser) return;
+        // Restore this user's saved local data if exists
+        let localData = {};
+        try {
+          const saved = localStorage.getItem(`pb-local-${serverUser.id}`);
+          if (saved) localData = JSON.parse(saved);
+        } catch {}
+        set({
+          _userId:      serverUser.id,
+          level:        serverUser.level      ?? 1,
+          xp:           serverUser.xp         ?? 0,
+          wins:         serverUser.stats?.wins      ?? 0,
+          losses:       serverUser.stats?.losses     ?? 0,
+          towerBest:    serverUser.stats?.towerBest  ?? 0,
+          totalDmg:     serverUser.stats?.totalDamage ?? 0,
+          superEffHits: serverUser.stats?.superEffHits ?? 0,
+          // Server wins data takes priority over local
+          winsWithPoke: Object.keys(serverUser.winsWithPoke || {}).length > 0
+            ? serverUser.winsWithPoke
+            : (localData.winsWithPoke ?? {}),
+          winsByType:   Object.keys(serverUser.winsByType || {}).length > 0
+            ? serverUser.winsByType
+            : (localData.winsByType ?? {}),
+          winsWithTeam: localData.winsWithTeam ?? {},
+          pokeXp:       localData.pokeXp       ?? {},
+          unlockedPokes: localData.unlockedPokes ?? [],
+        });
+        get().checkAchievements();
+        get().checkUnlocks();
+      },
+
       gainXP(amount) {
         set(s => {
           let xp  = s.xp + amount;
@@ -122,7 +203,21 @@ export const useProgressStore = create(
         get().checkUnlocks();
       },
 
-      recordWin()  { set(s => ({ wins:    s.wins    + 1 })); get().checkAchievements(); get().checkUnlocks(); },
+      recordWin()  {
+        set(s => ({ wins: s.wins + 1 }));
+        get().checkAchievements();
+        get().checkUnlocks();
+        // Persist local data for this user
+        const s = get();
+        if (s._userId) {
+          try {
+            localStorage.setItem(`pb-local-${s._userId}`, JSON.stringify({
+              winsWithPoke: s.winsWithPoke, winsByType: s.winsByType,
+              winsWithTeam: s.winsWithTeam, pokeXp: s.pokeXp, unlockedPokes: s.unlockedPokes,
+            }));
+          } catch {}
+        }
+      },
       recordLoss() { set(s => ({ losses:  s.losses  + 1 })); },
       recordSuperEff() { set(s => ({ superEffHits: s.superEffHits + 1 })); get().checkAchievements(); get().checkUnlocks(); },
 
@@ -219,39 +314,39 @@ export const useProgressStore = create(
       checkUnlocks() {
         const s = get();
         const newly = [];
-        const trainerRank = getTrainerRank(s.level);
-        const tierLimit = RANK_POKE_TIERS[trainerRank.rank];
 
         DEX.forEach(p => {
           if (s.unlockedPokes.includes(p.id)) return;
 
-          // Tier gate: strict by rank
-          if (p.id < tierLimit.min || p.id > tierLimit.max) return;
-
-          // Check custom rules
           let can = true;
           const rule = UNLOCK_RULES[p.id];
-          if (rule) {
-            if (rule.minLevel && s.level < rule.minLevel) can = false;
-            if (rule.defeatType) {
-              const { type, count } = rule.defeatType;
-              if ((s.winsByType[type] || 0) < count) can = false;
-            }
-            if (rule.winWithPoke) {
-              const { id, count } = rule.winWithPoke;
-              if ((s.winsWithPoke[id] || 0) < count) can = false;
-            }
-            if (rule.winWithTeam) {
-              const key = rule.winWithTeam.ids.sort((a,b)=>a-b).join(',');
-              if ((s.winsWithTeam[key] || 0) < rule.winWithTeam.count) can = false;
-            }
-            if (rule.pokeLevel) {
-              const { id, level } = rule.pokeLevel;
-              const plvl = get().pokeLevel(id);
-              if (plvl < level) can = false;
-            }
-            if (rule.towerBest && s.towerBest < rule.towerBest) can = false;
-            if (rule.megaEvent && !s.megaEventActive) can = false;
+
+          if (!rule) { newly.push(p.id); return; } // no rule = free
+
+          if (rule.megaEvent && !s.megaEventActive) return; // event locked
+          if (rule.minLevel   && s.level < rule.minLevel)   can = false;
+          if (rule.minRank) {
+            const curRank = getTrainerRank(s.level);
+            const rankOrder = ['beginner','novice','adept','expert','master','legendary'];
+            if (rankOrder.indexOf(curRank.rank) < rankOrder.indexOf(rule.minRank)) can = false;
+          }
+          if (rule.towerBest  && s.towerBest < rule.towerBest) can = false;
+          if (rule.defeatType) {
+            const { type, count } = rule.defeatType;
+            if ((s.winsByType[type] || 0) < count) can = false;
+          }
+          if (rule.winWithPoke) {
+            const { id, count } = rule.winWithPoke;
+            if ((s.winsWithPoke[id] || 0) < count) can = false;
+          }
+          if (rule.winWithTeam) {
+            const key = rule.winWithTeam.ids.sort((a,b)=>a-b).join(',');
+            if ((s.winsWithTeam[key] || 0) < rule.winWithTeam.count) can = false;
+          }
+          if (rule.pokeLevel) {
+            const { id, level } = rule.pokeLevel;
+            const plvl = get().pokeLevel(id);
+            if (plvl < level) can = false;
           }
 
           if (can) newly.push(p.id);
@@ -259,7 +354,6 @@ export const useProgressStore = create(
 
         if (newly.length) {
           set(s => ({ unlockedPokes: [...new Set([...s.unlockedPokes, ...newly])] }));
-          // dispatch event for UI/notifications
           newly.forEach(id => {
             window.dispatchEvent(new CustomEvent('poke-unlocked', { detail: { id } }));
           });
@@ -283,39 +377,42 @@ export const useProgressStore = create(
         const s = get();
         if (s.unlockedPokes.includes(poke.id)) return true;
 
-        // Check trainer rank tier first (strict gating by rank)
-        const trainerRank = getTrainerRank(s.level);
-        const tierLimit = RANK_POKE_TIERS[trainerRank.rank];
-        if (poke.id < tierLimit.min || poke.id > tierLimit.max) return false;
-
-        // Check custom unlock rules
         const rule = UNLOCK_RULES[poke.id];
-        if (rule) {
-          if (rule.minLevel && s.level < rule.minLevel) return false;
-          if (rule.defeatType) {
-            const { type, count } = rule.defeatType;
-            if ((s.winsByType[type] || 0) < count) return false;
-          }
-          if (rule.winWithPoke) {
-            const { id, count } = rule.winWithPoke;
-            if ((s.winsWithPoke[id] || 0) < count) return false;
-          }
-          if (rule.winWithTeam) {
-            const key = rule.winWithTeam.ids.sort((a,b)=>a-b).join(',');
-            if ((s.winsWithTeam[key] || 0) < rule.winWithTeam.count) return false;
-          }
-          if (rule.pokeLevel) {
-            const { id, level } = rule.pokeLevel;
-            const plvl = get().pokeLevel(id);
-            if (plvl < level) return false;
-          }
-          if (rule.towerBest && s.towerBest < rule.towerBest) return false;
-          if (rule.megaEvent && !s.megaEventActive) return false;
+        if (!rule) return true; // no rule = free
+
+        if (rule.megaEvent && !s.megaEventActive) return false;
+        if (rule.minLevel   && s.level < rule.minLevel) return false;
+        if (rule.minRank) {
+          const curRank  = getTrainerRank(s.level);
+          const rankOrder = ['beginner','novice','adept','expert','master','legendary'];
+          if (rankOrder.indexOf(curRank.rank) < rankOrder.indexOf(rule.minRank)) return false;
+        }
+        if (rule.towerBest  && s.towerBest < rule.towerBest) return false;
+        if (rule.defeatType) {
+          const { type, count } = rule.defeatType;
+          if ((s.winsByType[type] || 0) < count) return false;
+        }
+        if (rule.winWithPoke) {
+          const { id, count } = rule.winWithPoke;
+          if ((s.winsWithPoke[id] || 0) < count) return false;
+        }
+        if (rule.winWithTeam) {
+          const key = rule.winWithTeam.ids.sort((a,b)=>a-b).join(',');
+          if ((s.winsWithTeam[key] || 0) < rule.winWithTeam.count) return false;
+        }
+        if (rule.pokeLevel) {
+          const { id, level } = rule.pokeLevel;
+          const plvl = get().pokeLevel(id);
+          if (plvl < level) return false;
         }
         return true;
       },
     }),
-    { name: 'pokebattle-progress' }
+    {
+      name: 'pokebattle-progress',
+      // Merge server data on rehydrate without overwriting local stats like winsWithPoke
+      merge: (persisted, current) => ({ ...current, ...persisted }),
+    }
   )
 );
 

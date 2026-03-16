@@ -1,14 +1,7 @@
-// ══════════════════════════════════════════
-// API Service — connects React client to Express server
-// All server calls go through here
-// ══════════════════════════════════════════
-
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-// ── Generic fetch wrapper ─────────────────────────────────────────────────
 async function request(path, options = {}) {
   const token = sessionStorage.getItem('pb_token');
-
   const res = await fetch(`${BASE}${path}`, {
     headers: {
       'Content-Type': 'application/json',
@@ -30,51 +23,34 @@ async function request(path, options = {}) {
   return data;
 }
 
-// ════════════════════════════════════════
-// AUTH
-// ════════════════════════════════════════
 export const AuthAPI = {
   register: (username, email, password) =>
     request('/auth/register', { method: 'POST', body: { username, email, password } }),
-
   login: (email, password) =>
     request('/auth/login', { method: 'POST', body: { email, password } }),
-
   logout: () =>
     request('/auth/logout', { method: 'POST' }),
-
   me: () => request('/auth/me'),
-
   resendVerify: (email) =>
     request('/auth/resend-verify', { method: 'POST', body: { email } }),
 };
 
-// ════════════════════════════════════════
-// USER
-// ════════════════════════════════════════
 export const UserAPI = {
   getProfile: () => request('/user'),
-
   getPublicProfile: (username) => request(`/user/${username}`),
-
   syncProgress: (xpToAdd, achievements = []) =>
     request('/user/progress', { method: 'PATCH', body: { xpToAdd, achievements } }),
+  saveBattleResult: (payload) =>
+    request('/user/battle-result', { method: 'POST', body: payload }),
 };
 
-// ════════════════════════════════════════
-// BATTLE
-// ════════════════════════════════════════
 export const BattleAPI = {
   saveResult: (payload) =>
     request('/battle/result', { method: 'POST', body: payload }),
-
   getHistory: (page = 1, limit = 20) =>
     request(`/battle/history?page=${page}&limit=${limit}`),
 };
 
-// ════════════════════════════════════════
-// LEADERBOARD
-// ════════════════════════════════════════
 export const LeaderboardAPI = {
   getXP:    () => request('/leaderboard/xp'),
   getTower: () => request('/leaderboard/tower'),

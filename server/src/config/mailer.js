@@ -1,21 +1,38 @@
 // ── Nodemailer Setup ──────────────────────────────────────────────────────
-const nodemailer = require('nodemailer');
-
-const transporter = nodemailer.createTransport({
-  host:   process.env.SMTP_HOST   || 'smtp.gmail.com',
-  port:   Number(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+let transporter = null;
+try {
+  const nodemailer = require('nodemailer');
+  if (process.env.SMTP_USER && process.env.SMTP_PASS &&
+      !process.env.SMTP_USER.includes('your_') ) {
+    transporter = nodemailer.createTransport({
+      host:   process.env.SMTP_HOST   || 'smtp.gmail.com',
+      port:   Number(process.env.SMTP_PORT) || 587,
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+    console.log('✅ Mailer ready');
+  } else {
+    console.warn('⚠️  SMTP not configured — emails will be skipped');
+  }
+} catch {
+  console.warn('⚠️  nodemailer not installed — run: npm install nodemailer');
+}
 
 // ── Send verification email ────────────────────────────────────────────────
 async function sendVerificationEmail(email, username, token) {
-  const base   = process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`;
-  const link   = `${base}/api/auth/verify/${token}`;
+  if (!transporter) {
+    // Log the link to console in development so you can test without SMTP
+    const base = (process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`).replace(/\/$/, '');
+    const link = `${base}/api/auth/verify/${token}`;
+    console.log(`\n📧 [DEV] Verify link for ${email}:\n${link}\n`);
+    return;
+  }
   const client = process.env.CLIENT_URL || 'http://localhost:3000';
+  const base   = (process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`).replace(/\/$/, '');
+  const link   = `${base}/api/auth/verify/${token}`;
 
   await transporter.sendMail({
     from:    `"PokéBattle ⚡" <${process.env.SMTP_USER}>`,

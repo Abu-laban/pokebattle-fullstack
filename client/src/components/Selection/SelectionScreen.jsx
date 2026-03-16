@@ -4,6 +4,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useBattleStore }   from '../../store/battleStore.js';
 import { useProgressStore, UNLOCK_RULES } from '../../store/progressStore.js';
+import { useAuthStore }     from '../../store/authStore.js';
 import { DEX }              from '../../data/dex.js';
 import { PokeSprite }       from '../UI/PokeSprite.jsx';
 import { TypeBadge }        from '../UI/TypeBadge.jsx';
@@ -53,14 +54,21 @@ export function SelectionScreen() {
   const startBattle = useBattleStore(s => s.startBattle);
   const selectRandomTeam = useBattleStore(s => s.selectRandomTeam);
   const setScreen   = useBattleStore(s => s.setScreen);
-  const level       = useProgressStore(s => s.level);
-  const xp          = useProgressStore(s => s.xp);
-  const xpPercent   = useProgressStore(s => s.xpPercent());
-  const rankTitle   = useProgressStore(s => s.getRankTitle());
-  const towerBest   = useProgressStore(s => s.towerBest);
-  const wins        = useProgressStore(s => s.wins);
-  const losses      = useProgressStore(s => s.losses);
-  const isUnlocked  = useProgressStore(s => s.isPokeUnlocked);
+  const { user }    = useAuthStore();
+
+  // When not logged in — show zeros (don't read stale localStorage)
+  const level       = user?.level                ?? 1;
+  const xp          = user?.xp                   ?? 0;
+  const towerBest   = user?.stats?.towerBest      ?? 0;
+  const wins        = user?.stats?.wins           ?? 0;
+  const losses      = user?.stats?.losses         ?? 0;
+
+  const _progress   = useProgressStore();
+  const xpPercent   = user
+    ? Math.min(100, Math.round(((user.xp ?? 0) / (level * 100)) * 100))
+    : _progress.xpPercent();
+  const rankTitle   = _progress.getRankTitle();
+  const isUnlocked  = _progress.isPokeUnlocked;
 
   const [search, setSearch] = useState('');
 

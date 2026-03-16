@@ -1,0 +1,176 @@
+@keyframes slideUp { from{opacity:0;transform:translateY(20px) scale(.97)} to{opacity:1;transform:none} }
+
+.overlay {
+  position: fixed; inset: 0; z-index: 400;
+  background: rgba(0,0,0,.88); backdrop-filter: blur(14px);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.card {
+  position: relative;
+  background: linear-gradient(160deg, #0d1525 0%, #090e1a 100%);
+  border: 1.5px solid rgba(255,255,255,.10);
+  border-radius: 22px; width: 100%; max-width: 680px;
+  max-height: 88vh; display: flex; flex-direction: column;
+  animation: slideUp .3s cubic-bezier(.34,1.56,.64,1) both;
+  box-shadow: 0 28px 70px rgba(0,0,0,.85);
+  overflow: hidden;
+}
+
+/* Header */
+.header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 20px 20px 12px; gap: 12px; flex-shrink: 0;
+}
+.headerLeft { flex: 1; }
+.title {
+  font-family: 'Cairo', sans-serif; font-size: 18px; font-weight: 900;
+  color: #FFD600; margin-bottom: 8px;
+}
+.summary { display: flex; gap: 14px; flex-wrap: wrap; }
+.summary span { font-family: 'Cairo', sans-serif; font-size: 12px; font-weight: 700; }
+.closeBtn {
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
+  border-radius: 8px; color: rgba(255,255,255,.5); width: 32px; height: 32px;
+  font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all .2s; flex-shrink: 0;
+}
+.closeBtn:hover { background: rgba(239,83,80,.15); color: #EF9A9A; }
+
+/* Progress bar */
+.globalBar {
+  height: 6px; background: rgba(255,255,255,.08);
+  margin: 0 20px 4px; border-radius: 3px; overflow: hidden; flex-shrink: 0;
+}
+.globalFill {
+  height: 100%; border-radius: 3px;
+  background: linear-gradient(90deg, #4FC3F7, #7C4DFF);
+  transition: width .6s ease;
+}
+.globalPct {
+  font-family: 'Cairo', sans-serif; font-size: 11px; color: rgba(255,255,255,.35);
+  text-align: center; margin-bottom: 12px; flex-shrink: 0;
+}
+
+/* Filters */
+.filters {
+  display: flex; gap: 6px; padding: 0 20px 12px;
+  flex-shrink: 0; flex-wrap: wrap; align-items: center;
+}
+.filterBtn {
+  padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.04); color: rgba(255,255,255,.45);
+  font-family: 'Cairo', sans-serif; font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all .2s;
+}
+.filterBtn:hover { border-color: rgba(255,255,255,.2); color: rgba(255,255,255,.7); }
+.filterActive {
+  background: rgba(79,195,247,.15); color: #4FC3F7;
+  border-color: rgba(79,195,247,.3);
+}
+.searchInput {
+  flex: 1; min-width: 120px; padding: 6px 12px;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 8px; color: #fff; font-family: 'Cairo', sans-serif; font-size: 12px;
+  outline: none; text-align: right;
+}
+.searchInput:focus { border-color: rgba(79,195,247,.4); }
+
+/* List */
+.list {
+  overflow-y: auto; padding: 0 20px 16px; flex: 1;
+  scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.1) transparent;
+}
+
+.row {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 10px 12px; border-radius: 12px; margin-bottom: 6px;
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06);
+  transition: all .2s;
+}
+.row:hover { background: rgba(255,255,255,.055); }
+.rowDone {
+  background: rgba(102,187,106,.06); border-color: rgba(102,187,106,.18);
+}
+.rowReady {
+  background: rgba(255,214,0,.05); border-color: rgba(255,214,0,.2);
+}
+
+.spriteWrap { flex-shrink: 0; width: 44px; }
+
+.info { flex: 1; min-width: 0; }
+
+.nameRow {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px;
+}
+.pokeName {
+  font-family: 'Cairo', sans-serif; font-size: 13px; font-weight: 900; color: #fff;
+}
+.types { display: flex; gap: 4px; }
+.catTag {
+  font-family: 'Cairo', sans-serif; font-size: 10px; font-weight: 700;
+  padding: 2px 7px; border-radius: 6px; border: 1px solid; margin-right: auto;
+}
+
+/* Requirements */
+.reqs { display: flex; flex-direction: column; gap: 5px; }
+.req {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.reqDone .reqText { color: rgba(255,255,255,.35); text-decoration: line-through; }
+.reqIcon { font-size: 11px; flex-shrink: 0; }
+.reqText {
+  font-family: 'Cairo', sans-serif; font-size: 11px; color: rgba(255,255,255,.6);
+}
+.reqProgress {
+  display: flex; align-items: center; gap: 6px; width: 100%; padding-right: 18px;
+}
+.reqBar {
+  flex: 1; height: 4px; background: rgba(255,255,255,.08); border-radius: 2px; overflow: hidden;
+}
+.reqFill {
+  height: 100%; background: linear-gradient(90deg, #4FC3F7, #7C4DFF); border-radius: 2px;
+  transition: width .4s ease;
+}
+.reqPct {
+  font-family: 'Cairo', sans-serif; font-size: 10px; color: rgba(255,255,255,.4);
+  white-space: nowrap;
+}
+
+.unlockedMsg {
+  font-family: 'Cairo', sans-serif; font-size: 11px; color: rgba(102,187,106,.7);
+}
+
+.empty {
+  text-align: center; color: rgba(255,255,255,.3);
+  font-family: 'Cairo', sans-serif; font-size: 14px; padding: 32px;
+}
+
+/* Gen filter */
+.genFilters {
+  display: flex; gap: 4px; padding: 0 20px 10px;
+  flex-shrink: 0; overflow-x: auto; scrollbar-width: none;
+}
+.genFilters::-webkit-scrollbar { display: none; }
+.genBtn {
+  padding: 5px 10px; border-radius: 7px; white-space: nowrap;
+  border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04);
+  color: rgba(255,255,255,.4); font-family: 'Cairo',sans-serif;
+  font-size: 11px; font-weight: 700; cursor: pointer; transition: all .2s;
+}
+.genBtn:hover { border-color: rgba(255,255,255,.2); color: rgba(255,255,255,.65); }
+.genActive {
+  background: rgba(255,214,0,.12); color: #FFD600;
+  border-color: rgba(255,214,0,.3);
+}
+
+/* Rank tag */
+.rankTag {
+  font-family: 'Cairo',sans-serif; font-size: 10px; font-weight: 700;
+  padding: 2px 7px; border-radius: 6px;
+  background: rgba(120,144,156,.15); color: #90A4AE;
+  border: 1px solid rgba(120,144,156,.3);
+}
+
+.lockedMsg {
+  font-family: 'Cairo',sans-serif; font-size: 11px; color: rgba(255,255,255,.3);
+}

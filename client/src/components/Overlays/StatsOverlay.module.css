@@ -27,6 +27,7 @@
   border: 2px solid #ffd700;
   border-radius: 12px;
   padding: 24px;
+  width: 90%;
   max-width: 600px;
   max-height: 80vh;
   overflow-y: auto;

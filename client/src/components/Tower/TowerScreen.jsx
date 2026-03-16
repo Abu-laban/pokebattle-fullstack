@@ -4,6 +4,7 @@
 // ══════════════════════════════════════════
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useBattleStore }   from '../../store/battleStore.js';
+import { useProgressStore } from '../../store/progressStore.js';
 import { DEX }              from '../../data/dex.js';
 import { TypeBadge }        from '../UI/TypeBadge.jsx';
 import { POKE_STATS }       from '../../data/pokeStats.js';
@@ -39,6 +40,7 @@ export function TowerScreen() {
   const startTower   = useBattleStore(s => s.startTower);
   const selectRandomTowerTeam = useBattleStore(s => s.selectRandomTowerTeam);
   const setScreen    = useBattleStore(s => s.setScreen);
+  const isPokeUnlocked = useProgressStore(s => s.isPokeUnlocked);
   const [search, setSearch] = useState('');
   const [genFilter, setGenFilter] = useState('all');
   const [genOpen, setGenOpen] = useState(false);
@@ -46,6 +48,7 @@ export function TowerScreen() {
   const available = useMemo(() => {
     return DEX.filter(p => {
       if (towerTeam.some(t => t.poke.id === p.id)) return false;
+      if (!isPokeUnlocked(p)) return false;   // hide locked pokémon
       if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
       if (genFilter !== 'all') {
         const g = GEN_RANGES.find(x => x.label === genFilter);

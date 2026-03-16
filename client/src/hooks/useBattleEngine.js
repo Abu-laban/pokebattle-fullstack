@@ -14,6 +14,8 @@ import { AIEngine }         from '../engine/AIEngine.js';
 import { MOVE_SECONDARY }   from '../data/moveSecondary.js';
 import { MOVE_EFFECTS }     from '../data/moveEffects.js';
 import { SFX, playTypeSound } from '../engine/audio.js';
+import { UserAPI }           from '../services/api.js';
+import { useAuthStore }      from '../store/authStore.js';
 
 function hydrateTeam(plains) {
   return (plains || []).map(p => BattleMember.fromPlain(p));
@@ -30,6 +32,11 @@ export function useBattleEngine() {
   const store    = useBattleStore();
   const progress = useProgressStore();
   const log = useCallback((text, cls) => store.addLog(text, cls), [store]);
+
+  // Track superEff hits per battle session
+  const superEffRef   = { count: 0 };
+  const pokeKillsRef  = {};  // { pokeId: count } kills this battle
+  const typeKillsRef  = {};  // { type: count } type defeats this battle
 
   // ── PLAYER HIT ─────────────────────────────────────────────────────────────
   const executePlayerHit = useCallback((fieldPos, callback) => {
@@ -120,15 +127,15 @@ export function useBattleEngine() {
     const effTxt = mult === 0 ? ' مناعة!' : mult >= 4 ? ' فعّال جداً جداً! 🔥🔥' : mult >= 2 ? ' فعّال جداً! 🔥' : mult <= 0.25 ? ' غير فعّال أبداً...' : mult <= 0.5 ? ' غير فعّال...' : '';
     log('⚔ ' + attacker.poke.name + ' → ' + target.poke.name + ': ' + mv.n + ' (-' + dmg + ' HP)' + effTxt + (stab > 1 ? ' [STAB]' : '') + (mv.u ? ' [ULT!]' : ''), 'playerAtk');
 
-    if (mult >= 2) progress.recordSuperEff?.();
+    if (mult >= 2) { progress.recordSuperEff?.(); superEffRef.count++; }
 
     const sec = MOVE_SECONDARY[mv.n];
     if (sec && Math.random() < sec.chance && target.isAlive) StatusEngine.apply(target, sec.status, log);
 
     if (!target.isAlive) {
       log('💀 ' + target.poke.name + ' سقط!', 'death');
-      (target.poke.types || []).forEach(t => progress.recordDefeatType?.(t));
-      progress.recordWinWithPoke?.(attacker.poke.id);
+      (target.poke.types || []).forEach(t => { typeKillsRef[t] = (typeKillsRef[t] || 0) + 1; });
+      pokeKillsRef[attacker.poke.id] = (pokeKillsRef[attacker.poke.id] || 0) + 1;
       progress.gainPokeXp?.(attacker.poke.id, 20);
       if (attacker._destinyBond) { attacker._destinyBond = false; attacker.forceKO(); }
       const evts = eField.processDeaths();
@@ -157,7 +164,8 @@ export function useBattleEngine() {
     const alivePTargets = pField.activeMembers;
     if (!alivePTargets.length) { callback?.(); return; }
 
-    const difficulty = AIEngine.getDifficulty(s.towerStreak || 0);
+    const playerLevel = useAuthStore.getState().user?.level ?? progress.level ?? 1;
+    const difficulty = AIEngine.getDifficulty(s.towerStreak || 0, playerLevel);
     const { moveIdx, targetFieldPos } = AIEngine.decide(
       attacker, alivePTargets, weather, difficulty
     );
@@ -236,7 +244,14 @@ export function useBattleEngine() {
     [...myTeam, ...enTeam].forEach(m => StatusEngine.applyEndOfTurn(m, weather, log));
 
     const eDeaths = eField.processDeaths();
-    eDeaths.forEach(ev => { if (ev.newIdx !== null) log('🔄 ' + enTeam[ev.newIdx]?.poke?.name + ' يدخل!', 'sys'); });
+    eDeaths.forEach(ev => {
+      // Record type defeat for status-killed enemies
+      const deadPoke = enTeam.find(m => !m.isAlive);
+      if (deadPoke) {
+        (deadPoke.poke.types || []).forEach(t => { typeKillsRef[t] = (typeKillsRef[t] || 0) + 1; });
+      }
+      if (ev.newIdx !== null) log('🔄 ' + enTeam[ev.newIdx]?.poke?.name + ' يدخل!', 'sys');
+    });
     const pDeaths = pField.processDeaths();
     pDeaths.forEach(ev => { if (ev.newIdx !== null) log('🔄 ' + myTeam[ev.newIdx]?.poke?.name + ' يدخل!', 'sys'); });
 
@@ -259,8 +274,37 @@ export function useBattleEngine() {
   function endBattleResult(won) {
     SFX.stopBGM();
     setTimeout(() => won ? SFX.victory?.() : SFX.defeat?.(), 200);
+    const xpGained = won ? 30 : 0;
+    const superEffThisBattle = superEffRef.count;
+    superEffRef.count = 0;
+
+    // Apply kills + XP to progressStore only on win
     if (won) {
-      progress.gainXP(30);
+      const winningTeam = useBattleStore.getState().selectedIds || [];
+      // Win XP for all team members
+      winningTeam.forEach(id => progress.gainPokeXp?.(id, 15));
+      // Kill XP for attackers
+      Object.entries(pokeKillsRef).forEach(([id, count]) => {
+        progress.gainPokeXp?.(parseInt(id), count * 10);
+        for (let i = 0; i < count; i++) progress.recordWinWithPoke?.(parseInt(id));
+      });
+      Object.entries(typeKillsRef).forEach(([type, count]) => {
+        for (let i = 0; i < count; i++) progress.recordDefeatType?.(type);
+      });
+    } else {
+      // Even on loss, give small XP for participating pokes
+      const teamIds = useBattleStore.getState().selectedIds || [];
+      teamIds.forEach(id => progress.gainPokeXp?.(id, 5));
+    }
+    // Capture refs before reset
+    const pokeKillsSnapshot = { ...pokeKillsRef };
+    const typeKillsSnapshot = { ...typeKillsRef };
+    // Reset refs for next battle
+    Object.keys(pokeKillsRef).forEach(k => delete pokeKillsRef[k]);
+    Object.keys(typeKillsRef).forEach(k => delete typeKillsRef[k]);
+
+    if (won) {
+      progress.gainXP(xpGained);
       progress.recordWin();
       const ids = useBattleStore.getState().selectedIds || [];
       progress.recordWinWithTeam?.(ids);
@@ -268,8 +312,22 @@ export function useBattleEngine() {
       progress.recordLoss();
     }
     store.setActive(false);
-    store.setResultData({ type: 'battle', won, xp: won ? 30 : 0 });
+    store.setResultData({ type: 'battle', won, xp: xpGained });
     store.showOverlay('Result');
+
+    // ── Sync to server ──
+    const token = useAuthStore.getState().token;
+    if (token) {
+      UserAPI.saveBattleResult({
+        won,
+        xpGained,
+        superEffHits: superEffThisBattle,
+        pokeKills: won ? pokeKillsSnapshot : {},
+        typeKills:  won ? typeKillsSnapshot : {},
+      })
+        .then(() => useAuthStore.getState().refreshUser?.())
+        .catch(() => {});
+    }
   }
 
   // ── TOWER WIN ───────────────────────────────────────────────────────────────
@@ -333,9 +391,18 @@ export function useBattleEngine() {
     }
 
     progress.setTowerResult?.(snap.towerStreak);
-    progress.gainXP(snap.towerStreak * 5);
+    const towerXp = snap.towerStreak * 5;
+    progress.gainXP(towerXp);
     useBattleStore.setState({ towerTeam: updatedTT });
     store.endTowerRun();
+
+    // ── Sync tower result to server ──
+    const token = useAuthStore.getState().token;
+    if (token) {
+      UserAPI.saveBattleResult({ isTower: true, won: false, xpGained: towerXp, towerStreak: snap.towerStreak })
+        .then(() => useAuthStore.getState().refreshUser?.())
+        .catch(() => {});
+    }
   }
 
   // ── PLAYER SWAP ─────────────────────────────────────────────────────────────
