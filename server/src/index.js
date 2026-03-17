@@ -26,17 +26,18 @@ app.use(cors({
     // Allow requests with no origin (mobile, curl, Postman)
     if (!origin) return callback(null, true);
     const allowed = [
-      process.env.CLIENT_URL || 'http://localhost:3000',
+      process.env.CLIENT_URL,
       'http://localhost:3000',
       'http://localhost:5173',
-    ];
-    // Allow any GitHub Codespace or github.dev URL
-    const isCodespace = /\.app\.github\.dev$/.test(origin) || /\.github\.dev$/.test(origin);
-    if (allowed.includes(origin) || isCodespace) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
+    ].filter(Boolean);
+    // Allow any Vercel, GitHub Codespace, or Railway URL
+    const isAllowed =
+      allowed.includes(origin) ||
+      /\.vercel\.app$/.test(origin) ||
+      /\.app\.github\.dev$/.test(origin) ||
+      /\.github\.dev$/.test(origin) ||
+      /\.up\.railway\.app$/.test(origin);
+    callback(isAllowed ? null : new Error('Not allowed by CORS'), isAllowed);
   },
   credentials: true,
 }));
