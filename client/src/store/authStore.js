@@ -103,6 +103,8 @@ export const useAuthStore = create((set, get) => ({
     sessionStorage.removeItem('pb_token');
     resetProgress();
     useProgressStore.getState().resetAll?.();
+    // Lazy import to avoid circular deps
+    import('./missionStore.js').then(m => m.useMissionStore.getState().resetAll?.()).catch(()=>{});
     set({ user: null, token: null, loading: false, error: null, needsVerification: false, verificationEmail: null });
   },
 

@@ -8,10 +8,10 @@ import { EVOLUTIONS } from '../data/evolutionData.js';
 import { POKE_STATS } from '../data/pokeStats.js';
 
 // ── Helper: get BST for a pokemon ─────────────────────────────────────────
-function getBST(pokeId, hp) {
+function getBST(pokeId) {
   const s = POKE_STATS[pokeId];
-  if (!s) return 300;
-  return Object.values(s).reduce((a, b) => a + b, 0) + (hp || 0);
+  if (!s) return 250;
+  return Object.values(s).reduce((a, b) => a + b, 0);
 }
 
 // ── Evolution stage helper ─────────────────────────────────────────────────
@@ -34,19 +34,20 @@ function getEvoStage(id) {
 export const UNLOCK_RULES = {};
 
 DEX.forEach(poke => {
-  const bst   = getBST(poke.id, poke.hp);
-  const stage = getEvoStage(poke.id);
-  const evo   = EVOLUTIONS[poke.id];
+  const bst    = getBST(poke.id);   // 5-stat sum (no inflated battle HP)
+  const stage  = getEvoStage(poke.id);
+  const evo    = EVOLUTIONS[poke.id];
   const isMega = /mega|primal|ultra|zen/i.test(poke.name);
 
   if (isMega) { UNLOCK_RULES[poke.id] = { megaEvent: true }; return; }
 
   const hasChildren = DEX.some(p => EVOLUTIONS[p.id]?.parent === poke.id);
-  const isLegendary = bst >= 580 && !evo && !hasChildren;
+  // Legendary: no evolution chain, BST ≥ 500 (5-stat only)
+  const isLegendary = bst >= 500 && !evo && !hasChildren;
 
   if (isLegendary) {
     const mainType = poke.types[0];
-    UNLOCK_RULES[poke.id] = bst >= 620
+    UNLOCK_RULES[poke.id] = bst >= 570
       ? { minLevel: 30, towerBest: 5,  defeatType: { type: mainType, count: 5 } }
       : { minLevel: 20, defeatType: { type: mainType, count: 5 } };
     return;
@@ -54,8 +55,8 @@ DEX.forEach(poke => {
 
   if (evo) {
     const pid = evo.parent;
-    // Final evolutions also need a rank gate based on BST
-    const rankReq = bst >= 500 ? 'adept' : bst >= 420 ? 'novice' : null;
+    // Rank gate calibrated to 5-stat BST thresholds
+    const rankReq = bst >= 430 ? 'adept' : bst >= 360 ? 'novice' : null;
     const base = stage === 1
       ? { winWithPoke: { id: pid, count: 2 }, pokeLevel: { id: pid, level: 5 } }
       : { winWithPoke: { id: pid, count: 3 }, pokeLevel: { id: pid, level: 8 } };
@@ -63,10 +64,10 @@ DEX.forEach(poke => {
     return;
   }
 
-  // Base forms by BST + rank
-  if (bst >= 500)      UNLOCK_RULES[poke.id] = { minLevel: 15, minRank: 'adept'  };
-  else if (bst >= 420) UNLOCK_RULES[poke.id] = { minLevel: 5,  minRank: 'novice' };
-  // BST < 420: free, no rule
+  // Base forms — calibrated to 5-stat BST (no HP)
+  if (bst >= 420)      UNLOCK_RULES[poke.id] = { minLevel: 15, minRank: 'adept'  };
+  else if (bst >= 320) UNLOCK_RULES[poke.id] = { minLevel: 5,  minRank: 'novice' };
+  // BST < 320: free, no rule
 });
 
 export function xpForLevel(lvl) {
@@ -410,11 +411,44 @@ export const useProgressStore = create(
     }),
     {
       name: 'pokebattle-progress',
-      // Merge server data on rehydrate without overwriting local stats like winsWithPoke
-      merge: (persisted, current) => ({ ...current, ...persisted }),
+      // On rehydrate: re-validate all unlockedPokes against current rules
+      // This strips stale unlocks if rules changed or player lost progress
+      merge: (persisted, current) => {
+        const merged = { ...current, ...persisted };
+        if (merged.unlockedPokes?.length) {
+          const RANK_ORDER = ['beginner','novice','adept','expert','master','legendary'];
+          const curRankIdx = RANK_ORDER.indexOf(getTrainerRank(merged.level ?? 1).rank);
+          merged.unlockedPokes = merged.unlockedPokes.filter(id => {
+            const rule = UNLOCK_RULES[id];
+            if (!rule) return true;
+            if (rule.megaEvent) return !!(merged.megaEventActive);
+            if (rule.minLevel  && (merged.level ?? 1) < rule.minLevel) return false;
+            if (rule.minRank   && curRankIdx < RANK_ORDER.indexOf(rule.minRank)) return false;
+            if (rule.towerBest && (merged.towerBest ?? 0) < rule.towerBest) return false;
+            if (rule.defeatType) {
+              const { type, count } = rule.defeatType;
+              if (((merged.winsByType ?? {})[type] ?? 0) < count) return false;
+            }
+            if (rule.winWithPoke) {
+              const { id: pid, count } = rule.winWithPoke;
+              if (((merged.winsWithPoke ?? {})[pid] ?? 0) < count) return false;
+            }
+            return true;
+          });
+        }
+        return merged;
+      },
     }
   )
 );
+
+// Force re-validation: clear old unlock cache if store version changed
+const STORE_VERSION = 'v3';
+const storedVersion = localStorage.getItem('pb-rules-version');
+if (storedVersion !== STORE_VERSION) {
+  localStorage.removeItem('pokebattle-progress');
+  localStorage.setItem('pb-rules-version', STORE_VERSION);
+}
 
 // ensure initial unlock evaluation when the module is loaded
 useProgressStore.getState().checkUnlocks();

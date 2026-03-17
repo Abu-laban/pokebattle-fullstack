@@ -10,6 +10,7 @@ import { TowerScreen }       from './components/Tower/TowerScreen.jsx';
 import { AuthScreen }        from './components/Auth/AuthScreen.jsx';
 import { ProfileScreen }     from './components/Profile/ProfileScreen.jsx';
 import { MissionsScreen }    from './components/Missions/MissionsScreen.jsx';
+import { StoryMissions }     from './components/Missions/StoryMissions.jsx';
 import { LandingPage }       from './components/Landing/LandingPage.jsx';
 import { LeaderboardScreen } from './components/Leaderboard/LeaderboardScreen.jsx';
 import { ResultOverlay }      from './components/Overlays/ResultOverlay.jsx';
@@ -69,17 +70,17 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const handler = (e) => {
+    const unlockHandler = (e) => {
       const { id } = e.detail;
       const poke = DEX.find(p => p.id === id);
       if (poke) {
-        const notif = { id: Date.now(), text: `🔓 ${poke.name} مفتوح الآن!`, type: 'unlock' };
+        const notif = { id: Date.now(), text: `🔓 ${poke.name} مفتوح الآن!` };
         setNotifications(prev => [...prev, notif]);
         setTimeout(() => setNotifications(prev => prev.filter(n => n.id !== notif.id)), 4000);
       }
     };
-    window.addEventListener('poke-unlocked', handler);
-    return () => window.removeEventListener('poke-unlocked', handler);
+    window.addEventListener('poke-unlocked', unlockHandler);
+    return () => window.removeEventListener('poke-unlocked', unlockHandler);
   }, []);
 
   return (
@@ -123,6 +124,11 @@ export default function App() {
                 title="مهام فتح البوكيمون"
               >📋</button>
               <button
+                onClick={() => setScreen('story-missions')}
+                style={{ ...navBtn, padding:'6px 10px', borderRadius:10, background:'rgba(255,152,0,.10)', border:'1px solid rgba(255,152,0,.25)', color:'#FF9800', fontFamily:"'Cairo',sans-serif", fontSize:13, fontWeight:700, cursor:'pointer' }}
+                title="مهام القصة"
+              >📜</button>
+              <button
                 onClick={() => setScreen('profile')}
                 style={{ ...navBtn, display:'flex', alignItems:'center', gap:6, padding:'6px 12px', borderRadius:10, background:'rgba(79,195,247,.12)', border:'1px solid rgba(79,195,247,.25)', color:'#4FC3F7', fontFamily:"'Cairo',sans-serif", fontSize:13, fontWeight:700, cursor:'pointer' }}
                 title="البروفايل"
@@ -141,10 +147,11 @@ export default function App() {
             </div>
           </header>
 
-          {screen === 'auth'        && <AuthScreen onClose={() => setScreen('selection')} />}
-          {screen === 'profile'     && <ProfileScreen onClose={() => setScreen('selection')} />}
-          {screen === 'missions'    && <MissionsScreen onClose={() => setScreen('selection')} />}
-          {screen === 'leaderboard' && <LeaderboardScreen onBack={() => setScreen('selection')} />}
+          {screen === 'auth'          && <AuthScreen onClose={() => setScreen('selection')} />}
+          {screen === 'profile'       && <ProfileScreen onClose={() => setScreen('selection')} />}
+          {screen === 'missions'      && <MissionsScreen onClose={() => setScreen('selection')} />}
+          {screen === 'story-missions'&& <StoryMissions  onClose={() => setScreen('selection')} />}
+          {screen === 'leaderboard'   && <LeaderboardScreen onBack={() => setScreen('selection')} />}
           {screen === 'selection'   && <SelectionScreen />}
           {screen === 'battle'      && <BattleScreen />}
           {screen === 'tower-pick'  && <TowerScreen />}

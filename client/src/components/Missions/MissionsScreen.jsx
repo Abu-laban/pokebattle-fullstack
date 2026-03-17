@@ -18,10 +18,10 @@ const GEN_LABELS = {
   4:'سيتو 💎',  5:'يونوفا ⚫', 6:'كالوس ✦',  7:'ألولا 🌺',
 };
 
-function getBST(id, hp) {
+function getBST(id) {
   const s = POKE_STATS[id];
-  if (!s) return 300;
-  return Object.values(s).reduce((a,b)=>a+b,0) + (hp||0);
+  if (!s) return 250;
+  return Object.values(s).reduce((a,b)=>a+b,0);
 }
 
 const RANK_LABELS = {
@@ -119,7 +119,7 @@ export function MissionsScreen({ onClose }) {
   const rank      = getTrainerRank(level);
 
   const missions = useMemo(() => DEX.map(poke => {
-    const bst        = getBST(poke.id, poke.hp);
+    const bst        = getBST(poke.id);
     const rule       = UNLOCK_RULES[poke.id];
     const reqs       = buildReqs(poke, progress);
     const isUnlocked = progress.isPokeUnlocked(poke);

@@ -5,6 +5,7 @@
 import { useCallback } from 'react';
 import { useBattleStore, emitBattleAnim } from '../store/battleStore.js';
 import { useProgressStore } from '../store/progressStore.js';
+import { useMissionStore }  from '../store/missionStore.js';
 import { BattleMember }     from '../engine/BattleMember.js';
 import { BattleField }      from '../engine/BattleField.js';
 import { Weather }          from '../engine/Weather.js';
@@ -37,10 +38,11 @@ export function useBattleEngine() {
   const superEffRef   = { count: 0 };
   const pokeKillsRef  = {};  // { pokeId: count } kills this battle
   const typeKillsRef  = {};  // { type: count } type defeats this battle
+  const moveUsedRef   = {};  // { moveName: count } for mission tracking
 
   // Track all timeouts for cleanup
   const timeouts = [];
-  const safeTimeout = (fn, ms) => { const t = safeTimeout(fn, ms); timeouts.push(t); return t; };
+  const safeTimeout = (fn, ms) => { const t = setTimeout(fn, ms); timeouts.push(t); return t; };
 
   // ── PLAYER HIT ─────────────────────────────────────────────────────────────
   const executePlayerHit = useCallback((fieldPos, callback) => {
@@ -130,6 +132,9 @@ export function useBattleEngine() {
 
     const effTxt = mult === 0 ? ' مناعة!' : mult >= 4 ? ' فعّال جداً جداً! 🔥🔥' : mult >= 2 ? ' فعّال جداً! 🔥' : mult <= 0.25 ? ' غير فعّال أبداً...' : mult <= 0.5 ? ' غير فعّال...' : '';
     log('⚔ ' + attacker.poke.name + ' → ' + target.poke.name + ': ' + mv.n + ' (-' + dmg + ' HP)' + effTxt + (stab > 1 ? ' [STAB]' : '') + (mv.u ? ' [ULT!]' : ''), 'playerAtk');
+
+    // Track move usage for missions
+    moveUsedRef[mv.n] = (moveUsedRef[mv.n] || 0) + 1;
 
     if (mult >= 2) { progress.recordSuperEff?.(); superEffRef.count++; }
 
@@ -285,27 +290,22 @@ export function useBattleEngine() {
     // Apply kills + XP to progressStore only on win
     if (won) {
       const winningTeam = useBattleStore.getState().selectedIds || [];
-      // Win XP for all team members
       winningTeam.forEach(id => progress.gainPokeXp?.(id, 15));
-      // Kill XP for attackers
       Object.entries(pokeKillsRef).forEach(([id, count]) => {
         progress.gainPokeXp?.(parseInt(id), count * 10);
-        for (let i = 0; i < count; i++) progress.recordWinWithPoke?.(parseInt(id));
-      });
-      Object.entries(typeKillsRef).forEach(([type, count]) => {
-        for (let i = 0; i < count; i++) progress.recordDefeatType?.(type);
       });
     } else {
-      // Even on loss, give small XP for participating pokes
       const teamIds = useBattleStore.getState().selectedIds || [];
       teamIds.forEach(id => progress.gainPokeXp?.(id, 5));
     }
     // Capture refs before reset
     const pokeKillsSnapshot = { ...pokeKillsRef };
     const typeKillsSnapshot = { ...typeKillsRef };
+    const moveUsedSnapshot  = { ...moveUsedRef };
     // Reset refs for next battle
     Object.keys(pokeKillsRef).forEach(k => delete pokeKillsRef[k]);
     Object.keys(typeKillsRef).forEach(k => delete typeKillsRef[k]);
+    Object.keys(moveUsedRef).forEach(k => delete moveUsedRef[k]);
 
     if (won) {
       progress.gainXP(xpGained);
@@ -315,6 +315,21 @@ export function useBattleEngine() {
     } else {
       progress.recordLoss();
     }
+
+    // ── Fire mission events ──────────────────────────────────────────────────
+    const teamIds    = useBattleStore.getState().selectedIds || [];
+    // Expand typeKillsSnapshot into repeated array for mission counting
+    // e.g. { FIRE: 2, WATER: 1 } → ['FIRE','FIRE','WATER']
+    const enemyTypes = won
+      ? Object.entries(typeKillsSnapshot).flatMap(([t, n]) => Array(n).fill(t))
+      : [];
+    useMissionStore.getState().onBattleEnd({
+      won,
+      teamIds,
+      movesUsed: won ? moveUsedSnapshot : {},
+      enemyTypes,
+    });
+
     store.setActive(false);
     store.setResultData({ type: 'battle', won, xp: xpGained });
     store.showOverlay('Result');
@@ -328,6 +343,7 @@ export function useBattleEngine() {
         superEffHits: superEffThisBattle,
         pokeKills: won ? pokeKillsSnapshot : {},
         typeKills:  won ? typeKillsSnapshot : {},
+        moveUsed:  won ? moveUsedSnapshot  : {},
       })
         .then(() => useAuthStore.getState().refreshUser?.())
         .catch(() => {});

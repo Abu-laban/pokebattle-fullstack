@@ -174,3 +174,11 @@
 .lockedMsg {
   font-family: 'Cairo',sans-serif; font-size: 11px; color: rgba(255,255,255,.3);
 }
+
+.storyTag {
+  font-family: 'Cairo',sans-serif; font-size: 10px; font-weight: 700;
+  padding: 2px 7px; border-radius: 6px;
+  background: rgba(255,152,0,.15); color: #FF9800;
+  border: 1px solid rgba(255,152,0,.35);
+  cursor: default;
+}

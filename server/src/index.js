@@ -10,6 +10,7 @@ const authRouter     = require('./routes/auth');
 const userRouter     = require('./routes/user');
 const leaderRouter   = require('./routes/leaderboard');
 const battleRouter   = require('./routes/battle');
+const missionRouter  = require('./routes/missions');
 
 const app  = express();
 const PORT = process.env.PORT || 5000;
@@ -53,6 +54,7 @@ app.use('/api/auth',        authRouter);
 app.use('/api/user',        userRouter);
 app.use('/api/leaderboard', leaderRouter);
 app.use('/api/battle',      battleRouter);
+app.use('/api/missions',    missionRouter);
 
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../../client/dist')));

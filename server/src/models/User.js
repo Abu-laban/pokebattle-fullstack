@@ -51,6 +51,8 @@ const userSchema = new mongoose.Schema({
   // ── Local gameplay stats (poke usage & type wins) ────────────────────────
   winsWithPoke: { type: Map, of: Number, default: {} },
   winsByType:   { type: Map, of: Number, default: {} },
+  moveStats:    { type: Map, of: Number, default: {} },
+  completedMissions: { type: [String], default: [] },
 
   lastLogin: { type: Date, default: Date.now },
 }, { timestamps: true });
