@@ -38,6 +38,10 @@ export function useBattleEngine() {
   const pokeKillsRef  = {};  // { pokeId: count } kills this battle
   const typeKillsRef  = {};  // { type: count } type defeats this battle
 
+  // Track all timeouts for cleanup
+  const timeouts = [];
+  const safeTimeout = (fn, ms) => { const t = safeTimeout(fn, ms); timeouts.push(t); return t; };
+
   // ── PLAYER HIT ─────────────────────────────────────────────────────────────
   const executePlayerHit = useCallback((fieldPos, callback) => {
     const s      = useBattleStore.getState();
@@ -136,7 +140,7 @@ export function useBattleEngine() {
       log('💀 ' + target.poke.name + ' سقط!', 'death');
       (target.poke.types || []).forEach(t => { typeKillsRef[t] = (typeKillsRef[t] || 0) + 1; });
       pokeKillsRef[attacker.poke.id] = (pokeKillsRef[attacker.poke.id] || 0) + 1;
-      progress.gainPokeXp?.(attacker.poke.id, 20);
+      // XP awarded at battle end via pokeKillsRef to avoid double-counting
       if (attacker._destinyBond) { attacker._destinyBond = false; attacker.forceKO(); }
       const evts = eField.processDeaths();
       evts.forEach(ev => log('🔄 ' + enTeam[ev.newIdx]?.poke?.name + ' يدخل!', 'sys'));
@@ -273,7 +277,7 @@ export function useBattleEngine() {
   // ── WIN / LOSS ──────────────────────────────────────────────────────────────
   function endBattleResult(won) {
     SFX.stopBGM();
-    setTimeout(() => won ? SFX.victory?.() : SFX.defeat?.(), 200);
+    safeTimeout(() => won ? SFX.victory?.() : SFX.defeat?.(), 200);
     const xpGained = won ? 30 : 0;
     const superEffThisBattle = superEffRef.count;
     superEffRef.count = 0;
@@ -360,7 +364,7 @@ export function useBattleEngine() {
       towerActiveTeamIdx: activeTeamIdx,
     });
 
-    setTimeout(() => useBattleStore.getState().startNextTowerBattle(), 1800);
+    safeTimeout(() => useBattleStore.getState().startNextTowerBattle(), 1800);
   }
 
   // ── TOWER LOSE ──────────────────────────────────────────────────────────────
@@ -478,9 +482,9 @@ export function useBattleEngine() {
 
     if (actions.length === 0) {
       doEndOfTurn((r) => {
-        if (r === 'win')  { setTimeout(() => endBattleResult(true),  800); return; }
-        if (r === 'lose') { setTimeout(() => endBattleResult(false), 800); return; }
-        setTimeout(() => store.setPTurn(true), 200);
+        if (r === 'win')  { safeTimeout(() => endBattleResult(true),  800); return; }
+        if (r === 'lose') { safeTimeout(() => endBattleResult(false), 800); return; }
+        safeTimeout(() => store.setPTurn(true), 200);
       });
       return;
     }
@@ -490,9 +494,9 @@ export function useBattleEngine() {
       if (idx >= actions.length) {
         // All attacks done — end of turn
         doEndOfTurn((r) => {
-          if (r === 'win')  { setTimeout(() => endBattleResult(true),  800); return; }
-          if (r === 'lose') { setTimeout(() => endBattleResult(false), 800); return; }
-          setTimeout(() => store.setPTurn(true), 200);
+          if (r === 'win')  { safeTimeout(() => endBattleResult(true),  800); return; }
+          if (r === 'lose') { safeTimeout(() => endBattleResult(false), 800); return; }
+          safeTimeout(() => store.setPTurn(true), 200);
         });
         return;
       }
@@ -500,7 +504,7 @@ export function useBattleEngine() {
       const action = actions[idx];
       const delay  = idx === 0 ? 0 : 500;
 
-      setTimeout(() => {
+      safeTimeout(() => {
         // Check if the actor is still alive before executing
         const cur = useBattleStore.getState();
 
@@ -519,8 +523,8 @@ export function useBattleEngine() {
             });
           } else {
             executePlayerHit(fi, (r) => {
-              if (r === 'win')  { setTimeout(() => endBattleResult(true),  800); return; }
-              if (r === 'lose') { setTimeout(() => endBattleResult(false), 800); return; }
+              if (r === 'win')  { safeTimeout(() => endBattleResult(true),  800); return; }
+              if (r === 'lose') { safeTimeout(() => endBattleResult(false), 800); return; }
               executeNext(idx + 1);
             });
           }
@@ -534,8 +538,8 @@ export function useBattleEngine() {
           }
 
           executeEnemyHit(fi, (r) => {
-            if (r === 'lose') { setTimeout(() => endBattleResult(false), 800); return; }
-            if (r === 'win')  { setTimeout(() => endBattleResult(true),  800); return; }
+            if (r === 'lose') { safeTimeout(() => endBattleResult(false), 800); return; }
+            if (r === 'win')  { safeTimeout(() => endBattleResult(true),  800); return; }
             executeNext(idx + 1);
           });
         }
@@ -564,14 +568,14 @@ export function useBattleEngine() {
     executePlayerHit(0, (r) => {
       if (r === 'win')  { handleTowerWin();  return; }
       if (r === 'lose') { handleTowerLose(); return; }
-      setTimeout(() => {
+      safeTimeout(() => {
         executeEnemyHit(0, (re) => {
           if (re === 'lose') { handleTowerLose(); return; }
           if (re === 'win')  { handleTowerWin();  return; }
           doEndOfTurn((r2) => {
             if (r2 === 'win')  { handleTowerWin();  return; }
             if (r2 === 'lose') { handleTowerLose(); return; }
-            setTimeout(() => store.setPTurn(true), 200);
+            safeTimeout(() => store.setPTurn(true), 200);
           });
         });
       }, 500);
@@ -586,14 +590,14 @@ export function useBattleEngine() {
     store.setTurnTimer(30);
 
     executePlayerSwap(0, newTeamIdx, () => {
-      setTimeout(() => {
+      safeTimeout(() => {
         executeEnemyHit(0, (re) => {
           if (re === 'lose') { handleTowerLose(); return; }
           if (re === 'win')  { handleTowerWin();  return; }
           doEndOfTurn((r2) => {
             if (r2 === 'win')  { handleTowerWin();  return; }
             if (r2 === 'lose') { handleTowerLose(); return; }
-            setTimeout(() => store.setPTurn(true), 200);
+            safeTimeout(() => store.setPTurn(true), 200);
           });
         });
       }, 500);

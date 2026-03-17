@@ -37,9 +37,6 @@ const userSchema = new mongoose.Schema({
   auth0Id:    { type: String, unique: true, sparse: true },
   avatar:     { type: String, default: null },
   provider:   { type: String, default: 'local' },
-  facebookId: { type: String, unique: true, sparse: true },
-  avatar:     { type: String, default: null },
-  provider:   { type: String, default: 'local' },
 
   // ── Progress ──────────────────────────────────────────────────────────
   xp:    { type: Number, default: 0 },

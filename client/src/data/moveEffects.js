@@ -61,5 +61,11 @@ export const MOVE_EFFECTS = {
   'RAIN DANCE':    {weather:'RAIN'},
   'SANDSTORM':     {weather:'SAND'},
   'HAIL':          {weather:'HAIL'},
+  // ── حركات حالة إضافية ──
+  'YAWN':          {target:'foe',  status:'SLP', delayed: true},
+  'ENCORE':        {target:'foe',  status:'ENC'},
+  'MIST':          {target:'self', protect:'stat'},
+  'ATTRACT':       {target:'foe',  status:'ATT'},
+  'LEECH SEED':    {target:'foe',  status:'LSE'},
 };
 export default MOVE_EFFECTS;

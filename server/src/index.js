@@ -21,11 +21,22 @@ app.set('trust proxy', 1);
 
 app.use(helmet());
 app.use(cors({
-  origin: [
-    process.env.CLIENT_URL || 'http://localhost:3000',
-    'http://localhost:3000',
-    'http://localhost:5173',
-  ],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile, curl, Postman)
+    if (!origin) return callback(null, true);
+    const allowed = [
+      process.env.CLIENT_URL || 'http://localhost:3000',
+      'http://localhost:3000',
+      'http://localhost:5173',
+    ];
+    // Allow any GitHub Codespace or github.dev URL
+    const isCodespace = /\.app\.github\.dev$/.test(origin) || /\.github\.dev$/.test(origin);
+    if (allowed.includes(origin) || isCodespace) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 

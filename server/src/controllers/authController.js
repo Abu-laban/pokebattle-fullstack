@@ -73,7 +73,7 @@ const verifyEmail = async (req, res) => {
     user.isVerified         = true;
     user.verifyToken        = undefined;
     user.verifyTokenExpires = undefined;
-    await user.save({ validateBeforeSave: false });
+    await user.save({ validateModifiedOnly: true });
 
     const jwtToken = signToken(user._id);
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
@@ -92,7 +92,7 @@ const resendVerification = async (req, res) => {
     if (user.isVerified) return res.status(400).json({ error: 'الحساب مفعّل بالفعل' });
 
     const token = user.createVerifyToken();
-    await user.save({ validateBeforeSave: false });
+    await user.save({ validateModifiedOnly: true });
     await sendVerificationEmail(email, user.username, token);
     res.json({ message: 'تم إرسال رابط التحقق مجدداً' });
   } catch (err) {
@@ -119,7 +119,7 @@ const login = async (req, res) => {
       });
 
     user.lastLogin = new Date();
-    await user.save({ validateBeforeSave: false });
+    await user.save({ validateModifiedOnly: true });
 
     const token = signToken(user._id);
 
