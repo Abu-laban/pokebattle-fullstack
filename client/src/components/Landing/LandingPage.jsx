@@ -5,14 +5,14 @@ import styles            from './LandingPage.module.css';
 
 // 20 unique pokémon — 2× duplicated in JSX for seamless loop
 const POKES = [
+  { id: 3,   name: 'VENUSAUR',   type: 'GRASS',    color: '#66BB6A' },
   { id: 6,   name: 'CHARIZARD',  type: 'FIRE',     color: '#FF6B35' },
+  { id: 9,   name: 'BLASTOISE',  type: 'WATER',    color: '#1E88E5' },
   { id: 150, name: 'MEWTWO',     type: 'PSYCHIC',  color: '#EC407A' },
   { id: 249, name: 'LUGIA',      type: 'FLYING',   color: '#4FC3F7' },
   { id: 384, name: 'RAYQUAZA',   type: 'DRAGON',   color: '#5C6BC0' },
   { id: 25,  name: 'PIKACHU',    type: 'ELECTRIC', color: '#FFD600' },
   { id: 245, name: 'SUICUNE',    type: 'WATER',    color: '#29B6F6' },
-  { id: 3,   name: 'VENUSAUR',   type: 'GRASS',    color: '#66BB6A' },
-  { id: 9,   name: 'BLASTOISE',  type: 'WATER',    color: '#1E88E5' },
   { id: 94,  name: 'GENGAR',     type: 'GHOST',    color: '#7E57C2' },
   { id: 130, name: 'GYARADOS',   type: 'WATER',    color: '#1565C0' },
   { id: 143, name: 'SNORLAX',    type: 'NORMAL',   color: '#78909C' },
