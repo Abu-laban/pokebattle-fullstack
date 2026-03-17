@@ -45,27 +45,6 @@
 }
 
 /* OAuth */
-.oauthRow { display: flex; flex-direction: column; gap: 9px; margin-bottom: 18px; }
-.oauthBtn {
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  padding: 12px 16px; border-radius: 13px; border: 1.5px solid rgba(255,255,255,.12);
-  background: rgba(255,255,255,.05); color: #fff;
-  font-family:'Cairo',sans-serif; font-size:14px; font-weight:700;
-  cursor: pointer; text-decoration: none;
-  transition: all .22s;
-}
-.oauthBtn:hover { background: rgba(255,255,255,.10); border-color: rgba(255,255,255,.22); transform: translateY(-1px); }
-.google:hover  { border-color: rgba(234,67,53,.45); box-shadow: 0 4px 18px rgba(234,67,53,.15); }
-.facebook:hover { border-color: rgba(24,119,242,.45); box-shadow: 0 4px 18px rgba(24,119,242,.15); }
-
-/* Divider */
-.divider {
-  display: flex; align-items: center; gap: 12px;
-  margin-bottom: 18px; color: rgba(255,255,255,.22);
-  font-family:'Cairo',sans-serif; font-size:12px;
-}
-.divider::before, .divider::after { content:''; flex:1; height:1px; background:rgba(255,255,255,.10); }
-
 /* Form */
 .form { display: flex; flex-direction: column; }
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 13px; }
