@@ -93,8 +93,16 @@ const resendVerification = async (req, res) => {
 
     const token = user.createVerifyToken();
     await user.save({ validateModifiedOnly: true });
-    await sendVerificationEmail(email, user.username, token);
-    res.json({ message: 'تم إرسال رابط التحقق مجدداً' });
+    try {
+      await sendVerificationEmail(email, user.username, token);
+      res.json({ message: 'تم إرسال رابط التحقق مجدداً' });
+    } catch (mailErr) {
+      console.warn('⚠️ Resend email failed:', mailErr.message);
+      res.status(500).json({
+        error: 'حدث خطأ أثناء إرسال الإيميل. تحقق من إعدادات SMTP في السيرفر.',
+        details: process.env.NODE_ENV !== 'production' ? mailErr.message : undefined,
+      });
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
