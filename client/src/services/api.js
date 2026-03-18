@@ -24,6 +24,8 @@ async function request(path, options = {}) {
 }
 
 export const AuthAPI = {
+  // Legacy (server-managed auth). Kept for backward compatibility but not used
+  // when Supabase Auth is enabled.
   register: (username, email, password) =>
     request('/auth/register', { method: 'POST', body: { username, email, password } }),
   login: (email, password) =>

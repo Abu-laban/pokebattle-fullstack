@@ -1,6 +1,7 @@
 import { create }            from 'zustand';
-import { AuthAPI }           from '../services/api.js';
+import { UserAPI }           from '../services/api.js';
 import { useProgressStore }  from './progressStore.js';
+import { supabase }          from '../services/supabase.js';
 
 function resetProgress() {
   localStorage.removeItem('pokebattle-progress');
@@ -22,13 +23,22 @@ export const useAuthStore = create((set, get) => ({
   register: async (username, email, password) => {
     set({ loading: true, error: null, needsVerification: false });
     try {
-      const data = await AuthAPI.register(username, email, password);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { username },
+          emailRedirectTo: window.location.origin,
+        },
+      });
+      if (error) throw error;
+
       set({
         loading: false,
-        needsVerification: !data.devAutoVerified,
+        needsVerification: true,
         verificationEmail: email,
       });
-      return { success: true, devAutoVerified: data.devAutoVerified, needsVerification: !data.devAutoVerified };
+      return { success: true, needsVerification: true, supabaseUser: data.user || null };
     } catch (err) {
       set({ error: err.message, loading: false });
       return { success: false };
@@ -38,18 +48,20 @@ export const useAuthStore = create((set, get) => ({
   login: async (email, password) => {
     set({ loading: true, error: null, needsVerification: false });
     try {
-      const { token, user } = await AuthAPI.login(email, password);
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      const token = data.session?.access_token;
+      if (!token) throw new Error('Missing access token');
       sessionStorage.setItem('pb_token', token);
       resetProgress();
-      let freshUser = user;
-      try { freshUser = (await AuthAPI.me()).user; } catch {}
+      const freshUser = (await UserAPI.getProfile()).user;
       set({ token, user: freshUser, loading: false });
       syncProgress(freshUser);
       return { success: true };
     } catch (err) {
-      const isVerify = err.needsVerification;
-      set({ error: err.message, loading: false, needsVerification: isVerify || false, verificationEmail: isVerify ? email : null });
-      return { success: false, needsVerification: isVerify };
+      // Supabase returns various messages; show directly to user
+      set({ error: err.message, loading: false, needsVerification: false, verificationEmail: null });
+      return { success: false };
     }
   },
 
@@ -58,25 +70,29 @@ export const useAuthStore = create((set, get) => ({
     resetProgress();
     set({ token, user: userData, loading: false, error: null });
     try {
-      const res = await AuthAPI.me();
+      const res = await UserAPI.getProfile();
       set({ user: res.user });
       syncProgress(res.user);
     } catch {}
   },
 
   restoreSession: async () => {
-    const token = sessionStorage.getItem('pb_token');
-    if (!token) {
-      resetProgress();
-      useProgressStore.getState().resetAll?.();
-      set({ user: null, token: null });
-      return;
-    }
     try {
-      const { user } = await AuthAPI.me();
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token || null;
+      if (!token) {
+        sessionStorage.removeItem('pb_token');
+        resetProgress();
+        useProgressStore.getState().resetAll?.();
+        set({ user: null, token: null });
+        return;
+      }
+      sessionStorage.setItem('pb_token', token);
+      const { user } = await UserAPI.getProfile();
       set({ user, token });
       syncProgress(user);
     } catch {
+      try { await supabase.auth.signOut(); } catch {}
       sessionStorage.removeItem('pb_token');
       resetProgress();
       useProgressStore.getState().resetAll?.();
@@ -86,7 +102,7 @@ export const useAuthStore = create((set, get) => ({
 
   refreshUser: async () => {
     try {
-      const { user } = await AuthAPI.me();
+      const { user } = await UserAPI.getProfile();
       set({ user });
       syncProgress(user);
       return user;
@@ -94,12 +110,16 @@ export const useAuthStore = create((set, get) => ({
   },
 
   resendVerification: async (email) => {
-    try { await AuthAPI.resendVerify(email); return true; }
+    try {
+      const { error } = await supabase.auth.resend({ type: 'signup', email });
+      if (error) throw error;
+      return true;
+    }
     catch { return false; }
   },
 
   logout: async () => {
-    try { await AuthAPI.logout(); } catch {}
+    try { await supabase.auth.signOut(); } catch {}
     sessionStorage.removeItem('pb_token');
     resetProgress();
     useProgressStore.getState().resetAll?.();

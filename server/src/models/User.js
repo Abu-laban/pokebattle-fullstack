@@ -15,6 +15,7 @@ const battleStatsSchema = new mongoose.Schema({
 
 // ── Main User schema ───────────────────────────────────────────────────────
 const userSchema = new mongoose.Schema({
+  supabaseId: { type: String, unique: true, sparse: true },
   username: {
     type: String, required: true, unique: true,
     trim: true, minlength: 3, maxlength: 20,
