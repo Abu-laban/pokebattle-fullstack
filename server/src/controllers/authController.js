@@ -81,7 +81,12 @@ const verifyEmail = async (req, res) => {
 
     const jwtToken = signToken(user._id);
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-    res.redirect(`${clientUrl}/auth/callback?token=${jwtToken}&user=${encodeURIComponent(JSON.stringify(user.toPublic()))}&verified=true`);
+    
+    // Ensure the redirect URL is clean and handles potential trailing slashes
+    const baseUrl = clientUrl.endsWith('/') ? clientUrl.slice(0, -1) : clientUrl;
+    const redirectUrl = `${baseUrl}/?token=${jwtToken}&user=${encodeURIComponent(JSON.stringify(user.toPublic()))}&verified=true`;
+    
+    res.redirect(redirectUrl);
   } catch (err) {
     res.status(500).json({ error: 'حدث خطأ داخلي في الخادم' });
   }

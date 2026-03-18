@@ -49,12 +49,27 @@ export default function App() {
 
     if (oauthToken && oauthUser) {
       try {
-        loginWithToken(oauthToken, JSON.parse(decodeURIComponent(oauthUser)));
+        const decodedUser = JSON.parse(decodeURIComponent(oauthUser));
+        loginWithToken(oauthToken, decodedUser);
         window.history.replaceState({}, '', '/');
+        
+        // If coming from email verification, show a nice notification
+        const isVerified = params.get('verified') === 'true';
+        if (isVerified) {
+          const now = Date.now();
+          setNotifications(prev => [...prev, { 
+            id: now, 
+            createdAt: now, 
+            text: '✅ تم تفعيل حسابك بنجاح! أهلاً بك في PokéBattle.' 
+          }]);
+        }
+
         setScreen('selection');
         setSessionChecked(true);
         return;
-      } catch {}
+      } catch (err) {
+        console.error('Auth callback error:', err);
+      }
     }
     if (oauthError) window.history.replaceState({}, '', '/');
     restoreSession().finally(() => setSessionChecked(true));
