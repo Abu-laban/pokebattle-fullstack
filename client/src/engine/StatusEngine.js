@@ -95,7 +95,8 @@ export class StatusEngine {
     }
 
     if (member.hasStatus('PAR')) {
-      if (Math.random() < 0.5) { addLog?.(`⚡ ${name} مشلول تماماً!`, 'sys'); return true; }
+      // Official Pokemon mechanics: 25% chance to skip turn
+      if (Math.random() < 0.25) { addLog?.(`⚡ ${name} مشلول تماماً!`, 'sys'); return true; }
     }
 
     if (member.hasStatus('CNF')) {

@@ -41,8 +41,19 @@ export function useBattleEngine() {
   const moveUsedRef   = {};  // { moveName: count } for mission tracking
 
   // Track all timeouts for cleanup
-  const timeouts = [];
-  const safeTimeout = (fn, ms) => { const t = setTimeout(fn, ms); timeouts.push(t); return t; };
+  const timeoutsRef = useRef([]);
+  const safeTimeout = useCallback((fn, ms) => {
+    const t = setTimeout(fn, ms);
+    timeoutsRef.current.push(t);
+    return t;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      timeoutsRef.current.forEach(t => clearTimeout(t));
+    };
+  }, []);
 
   // ── PLAYER HIT ─────────────────────────────────────────────────────────────
   const executePlayerHit = useCallback((fieldPos, callback) => {

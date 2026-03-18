@@ -49,7 +49,7 @@ const register = async (req, res) => {
       });
     }
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'حدث خطأ داخلي في الخادم' });
   }
 };
 
@@ -79,7 +79,7 @@ const verifyEmail = async (req, res) => {
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
     res.redirect(`${clientUrl}/auth/callback?token=${jwtToken}&user=${encodeURIComponent(JSON.stringify(user.toPublic()))}&verified=true`);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'حدث خطأ داخلي في الخادم' });
   }
 };
 
@@ -104,7 +104,7 @@ const resendVerification = async (req, res) => {
       });
     }
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'حدث خطأ داخلي في الخادم' });
   }
 };
 
@@ -141,7 +141,7 @@ const login = async (req, res) => {
 
     res.json({ token, user: user.toPublic() });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'حدث خطأ داخلي في الخادم' });
   }
 };
 

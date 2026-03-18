@@ -39,6 +39,7 @@ const saveBattleResult = async (req, res) => {
     }
 
     // XP + level up
+    const oldLevel = user.level;
     const newLevel = user.addXP(xpEarned ?? 0);
     user.markModified('stats');
     await user.save();
@@ -46,7 +47,7 @@ const saveBattleResult = async (req, res) => {
     res.json({
       record,
       user: user.toPublic(),
-      levelUp: newLevel > (user.level - 1) ? newLevel : null,
+      levelUp: newLevel > oldLevel ? newLevel : null,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

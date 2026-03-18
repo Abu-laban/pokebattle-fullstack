@@ -33,7 +33,7 @@ export const AuthAPI = {
   logout: () =>
     request('/auth/logout', { method: 'POST' }),
   me: () => request('/auth/me'),
-  resendVerify: (email) =>
+  resendVerification: (email) =>
     request('/auth/resend-verify', { method: 'POST', body: { email } }),
 };
 

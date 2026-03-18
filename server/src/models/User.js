@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt   = require('bcryptjs');
 const crypto   = require('crypto');
+const { xpForLevel } = require('../utils/xpUtils');
 
 // ── Battle Stats sub-schema ────────────────────────────────────────────────
 const battleStatsSchema = new mongoose.Schema({
@@ -15,7 +16,6 @@ const battleStatsSchema = new mongoose.Schema({
 
 // ── Main User schema ───────────────────────────────────────────────────────
 const userSchema = new mongoose.Schema({
-  supabaseId: { type: String, unique: true, sparse: true },
   username: {
     type: String, required: true, unique: true,
     trim: true, minlength: 3, maxlength: 20,
@@ -76,8 +76,8 @@ userSchema.methods.createVerifyToken = function () {
 // ── Level up logic ─────────────────────────────────────────────────────────
 userSchema.methods.addXP = function (amount) {
   this.xp += amount;
-  while (this.xp >= this.level * 100) {
-    this.xp    -= this.level * 100;
+  while (this.xp >= xpForLevel(this.level)) {
+    this.xp -= xpForLevel(this.level);
     this.level += 1;
   }
   return this.level;

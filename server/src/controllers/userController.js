@@ -2,8 +2,13 @@ const User = require('../models/User');
 
 // ── GET /api/user/profile ─────────────────────────────────────────────────
 const getProfile = async (req, res) => {
-  const user = await User.findById(req.user._id);
-  res.json({ user: user.toPublic() });
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ error: 'المستخدم غير موجود' });
+    res.json({ user: user.toPublic() });
+  } catch (err) {
+    res.status(500).json({ error: 'حدث خطأ أثناء جلب الملف الشخصي' });
+  }
 };
 
 // ── GET /api/user/:username (public) ─────────────────────────────────────
@@ -14,7 +19,7 @@ const getPublicProfile = async (req, res) => {
     if (!user) return res.status(404).json({ error: 'المستخدم غير موجود' });
     res.json({ user });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'حدث خطأ داخلي في الخادم' });
   }
 };
 
@@ -31,7 +36,7 @@ const syncProgress = async (req, res) => {
     await user.save();
     res.json({ user: user.toPublic() });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'حدث خطأ داخلي في الخادم' });
   }
 };
 
@@ -79,7 +84,7 @@ const saveBattleResult = async (req, res) => {
     await user.save();
     res.json({ user: user.toPublic() });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'حدث خطأ داخلي في الخادم' });
   }
 };
 

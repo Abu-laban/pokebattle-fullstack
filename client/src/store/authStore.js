@@ -1,7 +1,11 @@
 import { create }            from 'zustand';
 import { AuthAPI, UserAPI }  from '../services/api.js';
 import { useProgressStore }  from './progressStore.js';
-import { supabase }          from '../services/supabase.js';
+
+/**
+ * Auth Store - Manages user authentication state
+ * Supabase dependency removed, uses server-side JWT only
+ */
 
 function resetProgress() {
   localStorage.removeItem('pokebattle-progress');
@@ -23,24 +27,16 @@ export const useAuthStore = create((set, get) => ({
   register: async (username, email, password) => {
     set({ loading: true, error: null, needsVerification: false });
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { username },
-          emailRedirectTo: window.location.origin,
-        },
-      });
-      if (error) throw error;
-
+      const res = await AuthAPI.register(username, email, password);
+      
       set({
         loading: false,
         needsVerification: true,
         verificationEmail: email,
       });
-      return { success: true, needsVerification: true, supabaseUser: data.user || null };
+      return { success: true, needsVerification: true };
     } catch (err) {
-      set({ error: err.message, loading: false });
+      set({ error: err.response?.data?.error || err.message, loading: false });
       return { success: false };
     }
   },
@@ -48,32 +44,34 @@ export const useAuthStore = create((set, get) => ({
   login: async (email, password) => {
     set({ loading: true, error: null, needsVerification: false });
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      const token = data.session?.access_token;
+      const res = await AuthAPI.login(email, password);
+      const token = res.token;
+      
       if (!token) throw new Error('Missing access token');
+      
       sessionStorage.setItem('pb_token', token);
       resetProgress();
+      
       const freshUser = (await UserAPI.getProfile()).user;
       set({ token, user: freshUser, loading: false });
       syncProgress(freshUser);
+      
       return { success: true };
     } catch (err) {
-      // Fallback: allow legacy accounts created before Supabase migration
-      try {
-        const legacy = await AuthAPI.login(email, password);
-        const token = legacy.token;
-        if (!token) throw new Error('Missing legacy token');
-        sessionStorage.setItem('pb_token', token);
-        resetProgress();
-        const freshUser = (await UserAPI.getProfile()).user;
-        set({ token, user: freshUser, loading: false, error: null });
-        syncProgress(freshUser);
-        return { success: true, legacy: true };
-      } catch (legacyErr) {
-        set({ error: err.message || legacyErr.message, loading: false, needsVerification: false, verificationEmail: null });
-        return { success: false };
+      const errorMsg = err.response?.data?.error || err.message;
+      
+      // Check if user needs verification
+      if (errorMsg?.includes('تفعيل') || errorMsg?.includes('verify')) {
+        set({ 
+          error: errorMsg, 
+          loading: false, 
+          needsVerification: true, 
+          verificationEmail: email 
+        });
+      } else {
+        set({ error: errorMsg, loading: false });
       }
+      return { success: false };
     }
   },
 
@@ -89,26 +87,22 @@ export const useAuthStore = create((set, get) => ({
   },
 
   restoreSession: async () => {
+    const token = sessionStorage.getItem('pb_token');
+    if (!token) {
+      set({ user: null, token: null });
+      return;
+    }
+    
+    set({ loading: true, token });
     try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token || null;
-      if (!token) {
-        sessionStorage.removeItem('pb_token');
-        resetProgress();
-        useProgressStore.getState().resetAll?.();
-        set({ user: null, token: null });
-        return;
-      }
-      sessionStorage.setItem('pb_token', token);
       const { user } = await UserAPI.getProfile();
-      set({ user, token });
+      set({ user, loading: false });
       syncProgress(user);
-    } catch {
-      try { await supabase.auth.signOut(); } catch {}
+    } catch (err) {
       sessionStorage.removeItem('pb_token');
       resetProgress();
       useProgressStore.getState().resetAll?.();
-      set({ user: null, token: null });
+      set({ user: null, token: null, loading: false });
     }
   },
 
@@ -123,15 +117,12 @@ export const useAuthStore = create((set, get) => ({
 
   resendVerification: async (email) => {
     try {
-      const { error } = await supabase.auth.resend({ type: 'signup', email });
-      if (error) throw error;
+      await AuthAPI.resendVerification(email);
       return true;
-    }
-    catch { return false; }
+    } catch { return false; }
   },
 
   logout: async () => {
-    try { await supabase.auth.signOut(); } catch {}
     try { await AuthAPI.logout(); } catch {}
     sessionStorage.removeItem('pb_token');
     resetProgress();
