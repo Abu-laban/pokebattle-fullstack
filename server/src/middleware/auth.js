@@ -1,6 +1,18 @@
 const jwt  = require('jsonwebtoken');
 const User = require('../models/User');
 
+function verifyWithPossibleSecrets(token) {
+  const supaSecret = process.env.SUPABASE_JWT_SECRET;
+  const legacySecret = process.env.JWT_SECRET;
+  // Try Supabase first, then fallback to legacy server JWT.
+  if (supaSecret) {
+    try { return jwt.verify(token, supaSecret); } catch {}
+  }
+  if (legacySecret) return jwt.verify(token, legacySecret);
+  // As a last resort, throw a consistent error
+  return jwt.verify(token, undefined);
+}
+
 function normalizeUsername(raw) {
   const base = String(raw || '')
     .trim()
@@ -58,8 +70,7 @@ const protect = async (req, res, next) => {
     }
 
     const token   = header.split(' ')[1];
-    const secret = process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET;
-    const decoded = jwt.verify(token, secret);
+    const decoded = verifyWithPossibleSecrets(token);
 
     // Supabase: decoded.sub is the user id; server JWT: decoded.id
     if (decoded?.sub && decoded?.email) {
@@ -84,8 +95,7 @@ const optionalAuth = async (req, res, next) => {
     const header = req.headers.authorization;
     if (header?.startsWith('Bearer ')) {
       const token   = header.split(' ')[1];
-      const secret = process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET;
-      const decoded = jwt.verify(token, secret);
+      const decoded = verifyWithPossibleSecrets(token);
       if (decoded?.sub && decoded?.email) {
         req.user = await ensureUserFromSupabaseClaims(decoded);
       } else {

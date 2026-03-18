@@ -1,5 +1,5 @@
 import { create }            from 'zustand';
-import { UserAPI }           from '../services/api.js';
+import { AuthAPI, UserAPI }  from '../services/api.js';
 import { useProgressStore }  from './progressStore.js';
 import { supabase }          from '../services/supabase.js';
 
@@ -59,9 +59,21 @@ export const useAuthStore = create((set, get) => ({
       syncProgress(freshUser);
       return { success: true };
     } catch (err) {
-      // Supabase returns various messages; show directly to user
-      set({ error: err.message, loading: false, needsVerification: false, verificationEmail: null });
-      return { success: false };
+      // Fallback: allow legacy accounts created before Supabase migration
+      try {
+        const legacy = await AuthAPI.login(email, password);
+        const token = legacy.token;
+        if (!token) throw new Error('Missing legacy token');
+        sessionStorage.setItem('pb_token', token);
+        resetProgress();
+        const freshUser = (await UserAPI.getProfile()).user;
+        set({ token, user: freshUser, loading: false, error: null });
+        syncProgress(freshUser);
+        return { success: true, legacy: true };
+      } catch (legacyErr) {
+        set({ error: err.message || legacyErr.message, loading: false, needsVerification: false, verificationEmail: null });
+        return { success: false };
+      }
     }
   },
 
@@ -120,6 +132,7 @@ export const useAuthStore = create((set, get) => ({
 
   logout: async () => {
     try { await supabase.auth.signOut(); } catch {}
+    try { await AuthAPI.logout(); } catch {}
     sessionStorage.removeItem('pb_token');
     resetProgress();
     useProgressStore.getState().resetAll?.();
