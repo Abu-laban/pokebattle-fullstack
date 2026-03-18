@@ -84,8 +84,11 @@ const verifyEmail = async (req, res) => {
     
     // Ensure the redirect URL is clean and handles potential trailing slashes
     const baseUrl = clientUrl.endsWith('/') ? clientUrl.slice(0, -1) : clientUrl;
+    
+    // Use a hash-based or query-based approach that the frontend App.jsx is already listening for
     const redirectUrl = `${baseUrl}/?token=${jwtToken}&user=${encodeURIComponent(JSON.stringify(user.toPublic()))}&verified=true`;
     
+    console.log(`✅ User ${user.username} verified. Redirecting to: ${redirectUrl}`);
     res.redirect(redirectUrl);
   } catch (err) {
     res.status(500).json({ error: 'حدث خطأ داخلي في الخادم' });

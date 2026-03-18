@@ -44,8 +44,9 @@ function getSenderInfo() {
  * @param {string} token - Verification token
  */
 async function sendVerificationEmail(email, username, token) {
-  const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-  const verifyUrl = `${clientUrl}/verify/${token}`;
+  // Use SERVER_URL for verification link to process in backend first
+  const serverUrl = process.env.SERVER_URL || 'http://localhost:5000';
+  const verifyUrl = `${serverUrl}/api/auth/verify/${token}`;
   const sender = getSenderInfo();
   const subject = '✅ تحقق من بريدك — PokéBattle';
   
