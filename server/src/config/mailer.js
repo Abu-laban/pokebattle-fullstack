@@ -1,48 +1,38 @@
-const nodemailer = require('nodemailer');
+const Brevo = require('@getbrevo/brevo');
 
 /**
  * Mailer Configuration
- * Exclusively supports Brevo (formerly Sendinblue) via SMTP
+ * Exclusively supports Brevo via HTTPS API (Port 443)
+ * This bypasses SMTP port blocks on hosting providers like Railway.
  */
 
-let transporter = null;
+let apiInstance = null;
 
-// Initialize SMTP transporter using Brevo settings
-if (process.env.SMTP_USER && process.env.SMTP_PASS && !process.env.SMTP_USER.includes('your_')) {
-  const port = Number(process.env.SMTP_PORT) || 587;
-  const isSecure = port === 465; // Use SSL for port 465
-
-  transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
-    port: port,
-    secure: isSecure,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-    // Add timeouts to avoid long waits on network issues
-    connectionTimeout: 10000, // 10 seconds
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
-  });
-  
-  console.log(`✅ Mailer initialized (Brevo SMTP on port ${port}, secure: ${isSecure})`);
+// Initialize Brevo API client
+if (process.env.BREVO_API_KEY && !process.env.BREVO_API_KEY.includes('your_')) {
+  apiInstance = new Brevo.TransactionalEmailsApi();
+  apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
+  console.log('✅ Mailer ready (Brevo HTTPS API)');
 } else {
-  console.warn('⚠️ SMTP not configured — emails will be skipped. Please set SMTP_USER and SMTP_PASS in .env');
+  console.warn('⚠️ Brevo API Key not configured — emails will be skipped. Please set BREVO_API_KEY in .env');
 }
 
 /**
- * Get the sender address from environment variables
+ * Get the sender info from environment variables
  */
-function getFromAddress() {
-  return (
-    process.env.MAIL_FROM ||
-    (process.env.SMTP_USER ? `"PokéBattle ⚡" <${process.env.SMTP_USER}>` : '"PokéBattle ⚡" <no-reply@pokebattle.com>')
-  );
+function getSenderInfo() {
+  const mailFrom = process.env.MAIL_FROM || 'PokéBattle ⚡ <no-reply@pokebattle.com>';
+  
+  // Extract name and email from "Name <email@example.com>" format
+  const match = mailFrom.match(/^(.*?) <(.*?)>$/);
+  if (match) {
+    return { name: match[1].trim(), email: match[2].trim() };
+  }
+  return { name: 'PokéBattle ⚡', email: mailFrom };
 }
 
 /**
- * Send verification email to user
+ * Send verification email to user via Brevo API
  * @param {string} email - Recipient email
  * @param {string} username - Recipient username
  * @param {string} token - Verification token
@@ -50,10 +40,10 @@ function getFromAddress() {
 async function sendVerificationEmail(email, username, token) {
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
   const verifyUrl = `${clientUrl}/verify/${token}`;
-  const from = getFromAddress();
+  const sender = getSenderInfo();
   const subject = '✅ تحقق من بريدك — PokéBattle';
   
-  const html = `
+  const htmlContent = `
     <div style="background:#0d1525;color:#fff;font-family:Arial,sans-serif;padding:40px;border-radius:16px;max-width:480px;margin:auto;direction:rtl;text-align:right;">
       <div style="text-align:center;margin-bottom:24px">
         <span style="font-size:40px">⚡</span>
@@ -78,22 +68,25 @@ async function sendVerificationEmail(email, username, token) {
     </div>
   `;
 
-  if (transporter) {
+  if (apiInstance) {
     try {
-      await transporter.sendMail({ from, to: email, subject, html });
-      console.log(`📧 Verification email sent to ${email} via Brevo`);
+      const sendSmtpEmail = new Brevo.SendSmtpEmail();
+      sendSmtpEmail.subject = subject;
+      sendSmtpEmail.htmlContent = htmlContent;
+      sendSmtpEmail.sender = sender;
+      sendSmtpEmail.to = [{ email: email, name: username }];
+
+      await apiInstance.sendTransacEmail(sendSmtpEmail);
+      console.log(`📧 Verification email sent to ${email} via Brevo API (HTTPS)`);
     } catch (error) {
-      console.error('❌ Error sending email via Brevo:', error.message);
-      // Re-throw with a more descriptive message
-      const customError = new Error(`فشل إرسال البريد عبر Brevo: ${error.message}`);
-      customError.code = error.code;
-      throw customError;
+      console.error('❌ Error sending email via Brevo API:', error.response?.body || error.message);
+      throw new Error(`فشل إرسال البريد عبر Brevo API: ${error.message}`);
     }
     return;
   }
 
-  // Fallback for development if SMTP is not configured
-  console.log(`\n📧 [DEV] SMTP not configured. Verify link for ${email}:\n${verifyUrl}\n`);
+  // Fallback for development if API Key is not configured
+  console.log(`\n📧 [DEV] Brevo API not configured. Verify link for ${email}:\n${verifyUrl}\n`);
 }
 
 module.exports = { sendVerificationEmail };
