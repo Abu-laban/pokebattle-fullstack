@@ -39,6 +39,7 @@ export default function App() {
   const { user, restoreSession, logout, loginWithToken } = useAuthStore();
   const [sessionChecked, setSessionChecked] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const NOTIF_TTL_MS = 2500;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -74,13 +75,21 @@ export default function App() {
       const { id } = e.detail;
       const poke = DEX.find(p => p.id === id);
       if (poke) {
-        const notif = { id: Date.now(), text: `🔓 ${poke.name} مفتوح الآن!` };
-        setNotifications(prev => [...prev, notif]);
-        setTimeout(() => setNotifications(prev => prev.filter(n => n.id !== notif.id)), 4000);
+        const now = Date.now();
+        const notif = { id: now + Math.random(), createdAt: now, text: `🔓 ${poke.name} مفتوح الآن!` };
+        setNotifications(prev => [...prev, notif].slice(-6));
       }
     };
     window.addEventListener('poke-unlocked', unlockHandler);
     return () => window.removeEventListener('poke-unlocked', unlockHandler);
+  }, []);
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      const cutoff = Date.now() - NOTIF_TTL_MS;
+      setNotifications(prev => prev.filter(n => (n.createdAt ?? 0) > cutoff));
+    }, 400);
+    return () => clearInterval(t);
   }, []);
 
   return (
