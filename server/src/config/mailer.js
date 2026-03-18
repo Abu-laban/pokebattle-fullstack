@@ -9,16 +9,24 @@ let transporter = null;
 
 // Initialize SMTP transporter using Brevo settings
 if (process.env.SMTP_USER && process.env.SMTP_PASS && !process.env.SMTP_USER.includes('your_')) {
+  const port = Number(process.env.SMTP_PORT) || 587;
+  const isSecure = port === 465; // Use SSL for port 465
+
   transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
-    port: Number(process.env.SMTP_PORT) || 587,
-    secure: Number(process.env.SMTP_PORT) === 465,
+    port: port,
+    secure: isSecure,
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+    // Add timeouts to avoid long waits on network issues
+    connectionTimeout: 10000, // 10 seconds
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   });
-  console.log('✅ Mailer ready (Brevo SMTP)');
+  
+  console.log(`✅ Mailer initialized (Brevo SMTP on port ${port}, secure: ${isSecure})`);
 } else {
   console.warn('⚠️ SMTP not configured — emails will be skipped. Please set SMTP_USER and SMTP_PASS in .env');
 }
@@ -76,7 +84,10 @@ async function sendVerificationEmail(email, username, token) {
       console.log(`📧 Verification email sent to ${email} via Brevo`);
     } catch (error) {
       console.error('❌ Error sending email via Brevo:', error.message);
-      throw error;
+      // Re-throw with a more descriptive message
+      const customError = new Error(`فشل إرسال البريد عبر Brevo: ${error.message}`);
+      customError.code = error.code;
+      throw customError;
     }
     return;
   }

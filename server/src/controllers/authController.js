@@ -27,12 +27,16 @@ const register = async (req, res) => {
     const isDev = process.env.NODE_ENV !== 'production';
     const hasSmtp = process.env.SMTP_USER && !process.env.SMTP_USER.includes('your_');
 
-    if (isDev && !hasSmtp) {
-      // Dev mode without SMTP: auto-verify so users can login immediately
+    const bypassVerify = process.env.BYPASS_VERIFICATION === 'true';
+
+    if ((isDev && !hasSmtp) || bypassVerify) {
+      // Dev mode or bypass enabled: auto-verify so users can login immediately
       user.isVerified = true;
       await user.save();
       res.status(201).json({
-        message: 'تم إنشاء الحساب (وضع التطوير — مُفعَّل تلقائياً).',
+        message: bypassVerify 
+          ? 'تم إنشاء الحساب (تجاوز التفعيل مُفعَّل).' 
+          : 'تم إنشاء الحساب (وضع التطوير — مُفعَّل تلقائياً).',
         devAutoVerified: true,
       });
     } else {
@@ -97,7 +101,7 @@ const resendVerification = async (req, res) => {
       await sendVerificationEmail(email, user.username, token);
       res.json({ message: 'تم إرسال رابط التحقق مجدداً' });
     } catch (mailErr) {
-      console.warn('⚠️ Resend email failed:', mailErr.message);
+      console.warn('⚠️ Email sending failed:', mailErr.message);
       res.status(500).json({
         error: 'حدث خطأ أثناء إرسال الإيميل. تحقق من إعدادات SMTP في السيرفر.',
         details: process.env.NODE_ENV !== 'production' ? mailErr.message : undefined,
