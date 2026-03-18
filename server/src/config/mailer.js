@@ -1,18 +1,24 @@
-const Brevo = require('@getbrevo/brevo');
+const { BrevoClient } = require('@getbrevo/brevo');
 
 /**
  * Mailer Configuration
  * Exclusively supports Brevo via HTTPS API (Port 443)
- * This bypasses SMTP port blocks on hosting providers like Railway.
+ * Updated to support @getbrevo/brevo v2.x.x syntax
  */
 
-let apiInstance = null;
+let brevoClient = null;
 
 // Initialize Brevo API client
 if (process.env.BREVO_API_KEY && !process.env.BREVO_API_KEY.includes('your_')) {
-  apiInstance = new Brevo.TransactionalEmailsApi();
-  apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
-  console.log('✅ Mailer ready (Brevo HTTPS API)');
+  try {
+    // In v2.x.x, we use the BrevoClient class
+    brevoClient = new BrevoClient({
+      apiKey: process.env.BREVO_API_KEY,
+    });
+    console.log('✅ Mailer ready (Brevo HTTPS API v2)');
+  } catch (err) {
+    console.error('❌ Failed to initialize Brevo client:', err.message);
+  }
 } else {
   console.warn('⚠️ Brevo API Key not configured — emails will be skipped. Please set BREVO_API_KEY in .env');
 }
@@ -68,18 +74,18 @@ async function sendVerificationEmail(email, username, token) {
     </div>
   `;
 
-  if (apiInstance) {
+  if (brevoClient) {
     try {
-      const sendSmtpEmail = new Brevo.SendSmtpEmail();
-      sendSmtpEmail.subject = subject;
-      sendSmtpEmail.htmlContent = htmlContent;
-      sendSmtpEmail.sender = sender;
-      sendSmtpEmail.to = [{ email: email, name: username }];
-
-      await apiInstance.sendTransacEmail(sendSmtpEmail);
+      // In v2.x.x, the method is transactionalEmails.sendTransacEmail
+      await brevoClient.transactionalEmails.sendTransacEmail({
+        subject: subject,
+        htmlContent: htmlContent,
+        sender: sender,
+        to: [{ email: email, name: username }],
+      });
       console.log(`📧 Verification email sent to ${email} via Brevo API (HTTPS)`);
     } catch (error) {
-      console.error('❌ Error sending email via Brevo API:', error.response?.body || error.message);
+      console.error('❌ Error sending email via Brevo API:', error.message);
       throw new Error(`فشل إرسال البريد عبر Brevo API: ${error.message}`);
     }
     return;
