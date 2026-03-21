@@ -49,14 +49,23 @@ const userSchema = new mongoose.Schema({
   // ── Achievements ──────────────────────────────────────────────────────
   achievements: [{ type: String }],
 
-  // ── Local gameplay stats (poke usage & type wins) ────────────────────────
-  winsWithPoke: { type: Map, of: Number, default: {} },
-  winsByType:   { type: Map, of: Number, default: {} },
-  moveStats:    { type: Map, of: Number, default: {} },
+  // ── Local gameplay stats (poke usage & type wins) ─────────────────────
+  winsWithPoke:      { type: Map, of: Number, default: {} },
+  winsByType:        { type: Map, of: Number, default: {} },
+  moveStats:         { type: Map, of: Number, default: {} },
   completedMissions: { type: [String], default: [] },
 
   lastLogin: { type: Date, default: Date.now },
 }, { timestamps: true });
+
+// ── PERF-02 FIX: Compound indexes for leaderboard queries ────────────────────
+// These mirror the three sort patterns in leaderboardController.js:
+//   - XP board:     sort({ level: -1, xp: -1 })
+//   - Tower board:  sort({ 'stats.towerBest': -1 })
+//   - Wins board:   sort({ 'stats.wins': -1 })
+userSchema.index({ level: -1, xp: -1 });
+userSchema.index({ 'stats.towerBest': -1 });
+userSchema.index({ 'stats.wins': -1 });
 
 // ── Hash password before save ─────────────────────────────────────────────
 userSchema.pre('save', async function (next) {
@@ -69,7 +78,7 @@ userSchema.pre('save', async function (next) {
 userSchema.methods.createVerifyToken = function () {
   const token = crypto.randomBytes(32).toString('hex');
   this.verifyToken        = crypto.createHash('sha256').update(token).digest('hex');
-  this.verifyTokenExpires = Date.now() + 24 * 60 * 60 * 1000; // 24h
+  this.verifyTokenExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 h
   return token; // raw token sent in email
 };
 
@@ -77,7 +86,7 @@ userSchema.methods.createVerifyToken = function () {
 userSchema.methods.addXP = function (amount) {
   this.xp += amount;
   while (this.xp >= xpForLevel(this.level)) {
-    this.xp -= xpForLevel(this.level);
+    this.xp   -= xpForLevel(this.level);
     this.level += 1;
   }
   return this.level;

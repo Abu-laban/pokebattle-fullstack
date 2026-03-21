@@ -2,7 +2,7 @@
 // useBattleEngine — Full battle logic
 // v2: Smart AI + Speed-based turn ordering
 // ══════════════════════════════════════════
-import { useCallback } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { useBattleStore, emitBattleAnim } from '../store/battleStore.js';
 import { useProgressStore } from '../store/progressStore.js';
 import { useMissionStore }  from '../store/missionStore.js';
@@ -40,9 +40,23 @@ export function useBattleEngine() {
   const typeKillsRef  = {};  // { type: count } type defeats this battle
   const moveUsedRef   = {};  // { moveName: count } for mission tracking
 
-  // Track all timeouts for cleanup
-  const timeouts = [];
-  const safeTimeout = (fn, ms) => { const t = setTimeout(fn, ms); timeouts.push(t); return t; };
+  // BUG-04 FIX: useRef persists the timeout list across renders.
+  // A useEffect cleanup clears all pending timeouts when the hook's consumer
+  // unmounts (e.g. navigating away mid-battle), preventing state updates on
+  // unmounted components.
+  const timeoutsRef = useRef([]);
+  const safeTimeout = (fn, ms) => {
+    const t = setTimeout(fn, ms);
+    timeoutsRef.current.push(t);
+    return t;
+  };
+
+  useEffect(() => {
+    return () => {
+      timeoutsRef.current.forEach(clearTimeout);
+      timeoutsRef.current = [];
+    };
+  }, []);
 
   // ── PLAYER HIT ─────────────────────────────────────────────────────────────
   const executePlayerHit = useCallback((fieldPos, callback) => {

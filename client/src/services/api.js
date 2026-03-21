@@ -24,8 +24,6 @@ async function request(path, options = {}) {
 }
 
 export const AuthAPI = {
-  // Legacy (server-managed auth). Kept for backward compatibility but not used
-  // when Supabase Auth is enabled.
   register: (username, email, password) =>
     request('/auth/register', { method: 'POST', body: { username, email, password } }),
   login: (email, password) =>
@@ -42,15 +40,17 @@ export const UserAPI = {
   getPublicProfile: (username) => request(`/user/${username}`),
   syncProgress: (xpToAdd, achievements = []) =>
     request('/user/progress', { method: 'PATCH', body: { xpToAdd, achievements } }),
+
+  // BUG-02 FIX: All battle results now go to /battle/result (canonical endpoint).
+  // This endpoint creates a BattleRecord for history AND updates user stats.
+  // The old /user/battle-result route has been removed from the server.
   saveBattleResult: (payload) =>
-    request('/user/battle-result', { method: 'POST', body: payload }),
+    request('/battle/result', { method: 'POST', body: payload }),
 };
 
 export const BattleAPI = {
-  saveResult: (payload) =>
-    request('/battle/result', { method: 'POST', body: payload }),
-  getHistory: (page = 1, limit = 20) =>
-    request(`/battle/history?page=${page}&limit=${limit}`),
+  saveResult:  (payload)              => request('/battle/result', { method: 'POST', body: payload }),
+  getHistory:  (page = 1, limit = 20) => request(`/battle/history?page=${page}&limit=${limit}`),
 };
 
 export const LeaderboardAPI = {

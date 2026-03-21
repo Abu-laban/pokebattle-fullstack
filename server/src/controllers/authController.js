@@ -8,6 +8,18 @@ const signToken = (id) =>
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   });
 
+/**
+ * Sets the pb_token HttpOnly cookie — single source of truth for cookie opts.
+ */
+function setCookieToken(res, token) {
+  res.cookie('pb_token', token, {
+    httpOnly: true,
+    secure:   process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge:   7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+}
+
 // ── POST /api/auth/register ────────────────────────────────────────────────
 const register = async (req, res) => {
   try {
@@ -26,16 +38,14 @@ const register = async (req, res) => {
     const user  = new User({ username, email, password, provider: 'local' });
     const isDev = process.env.NODE_ENV !== 'production';
     const hasSmtp = process.env.SMTP_USER && !process.env.SMTP_USER.includes('your_');
-
     const bypassVerify = process.env.BYPASS_VERIFICATION === 'true';
 
     if ((isDev && !hasSmtp) || bypassVerify) {
-      // Dev mode or bypass enabled: auto-verify so users can login immediately
       user.isVerified = true;
       await user.save();
       res.status(201).json({
-        message: bypassVerify 
-          ? 'تم إنشاء الحساب (تجاوز التفعيل مُفعَّل).' 
+        message: bypassVerify
+          ? 'تم إنشاء الحساب (تجاوز التفعيل مُفعَّل).'
           : 'تم إنشاء الحساب (وضع التطوير — مُفعَّل تلقائياً).',
         devAutoVerified: true,
       });
@@ -53,11 +63,18 @@ const register = async (req, res) => {
       });
     }
   } catch (err) {
+    console.error('register error:', err);
     res.status(500).json({ error: 'حدث خطأ داخلي في الخادم' });
   }
 };
 
 // ── GET /api/auth/verify/:token ────────────────────────────────────────────
+//
+// SEC-01 FIX: JWT is NO LONGER placed in the redirect URL.
+// Instead the token is set as an HttpOnly cookie, and the client is redirected
+// to /?verified=true. The frontend calls GET /api/auth/me (via restoreSession)
+// to establish the session from the cookie.
+//
 const verifyEmail = async (req, res) => {
   try {
     const hashed = crypto.createHash('sha256').update(req.params.token).digest('hex');
@@ -79,18 +96,18 @@ const verifyEmail = async (req, res) => {
     user.verifyTokenExpires = undefined;
     await user.save({ validateModifiedOnly: true });
 
-    const jwtToken = signToken(user._id);
+    // Set the session cookie — token never touches the URL
+    const jwtToken  = signToken(user._id);
+    setCookieToken(res, jwtToken);
+
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-    
-    // Ensure the redirect URL is clean and handles potential trailing slashes
-    const baseUrl = clientUrl.endsWith('/') ? clientUrl.slice(0, -1) : clientUrl;
-    
-    // Use a hash-based or query-based approach that the frontend App.jsx is already listening for
-    const redirectUrl = `${baseUrl}/?token=${jwtToken}&user=${encodeURIComponent(JSON.stringify(user.toPublic()))}&verified=true`;
-    
-    console.log(`✅ User ${user.username} verified. Redirecting to: ${redirectUrl}`);
-    res.redirect(redirectUrl);
+    const baseUrl   = clientUrl.endsWith('/') ? clientUrl.slice(0, -1) : clientUrl;
+
+    console.log(`✅ User ${user.username} verified. Redirecting (cookie set, no token in URL).`);
+    // Only a flag in the URL — no credentials
+    res.redirect(`${baseUrl}/?verified=true`);
   } catch (err) {
+    console.error('verifyEmail error:', err);
     res.status(500).json({ error: 'حدث خطأ داخلي في الخادم' });
   }
 };
@@ -116,6 +133,7 @@ const resendVerification = async (req, res) => {
       });
     }
   } catch (err) {
+    console.error('resendVerification error:', err);
     res.status(500).json({ error: 'حدث خطأ داخلي في الخادم' });
   }
 };
@@ -142,25 +160,24 @@ const login = async (req, res) => {
     await user.save({ validateModifiedOnly: true });
 
     const token = signToken(user._id);
-
-    // Set httpOnly cookie + return user data
-    res.cookie('pb_token', token, {
-      httpOnly: true,
-      secure:   process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge:   7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    setCookieToken(res, token);
 
     res.json({ token, user: user.toPublic() });
   } catch (err) {
+    console.error('login error:', err);
     res.status(500).json({ error: 'حدث خطأ داخلي في الخادم' });
   }
 };
 
 // ── GET /api/auth/me ───────────────────────────────────────────────────────
+//
+// PERF-03 FIX: The user is already loaded by the `protect` middleware and
+// attached to req.user. There is no need for a second DB round-trip.
+//
 const getMe = async (req, res) => {
-  // Fetch fresh user data from DB
+  // Fetch fresh data so profile changes are always reflected
   const user = await User.findById(req.user._id);
+  if (!user) return res.status(404).json({ error: 'المستخدم غير موجود' });
   res.json({ user: user.toPublic() });
 };
 
@@ -169,7 +186,5 @@ const logout = (req, res) => {
   res.clearCookie('pb_token');
   res.json({ message: 'تم تسجيل الخروج' });
 };
-
-// ── Google OAuth callback ──────────────────────────────────────────────────
 
 module.exports = { register, login, getMe, logout, verifyEmail, resendVerification };

@@ -36,43 +36,39 @@ export default function App() {
   const screen    = useBattleStore(s => s.screen);
   const weather   = useBattleStore(s => s.weather);
   const setScreen = useBattleStore(s => s.setScreen);
-  const { user, restoreSession, logout, loginWithToken } = useAuthStore();
+  const { user, restoreSession, logout } = useAuthStore();
   const [sessionChecked, setSessionChecked] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const NOTIF_TTL_MS = 2500;
 
+  // ── SEC-01 FIX ─────────────────────────────────────────────────────────────
+  // The JWT is NO LONGER read from the URL query string.
+  // After email verification the server sets an HttpOnly cookie and redirects
+  // to /?verified=true. We detect that flag, restore the session via the
+  // cookie (restoreSession → GET /api/auth/me), then clear the URL.
+  // ──────────────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const oauthToken = params.get('token');
-    const oauthUser  = params.get('user');
-    const oauthError = params.get('error');
+    const params      = new URLSearchParams(window.location.search);
+    const isVerified  = params.get('verified') === 'true';
+    const oauthError  = params.get('error');
 
-    if (oauthToken && oauthUser) {
-      try {
-        const decodedUser = JSON.parse(decodeURIComponent(oauthUser));
-        loginWithToken(oauthToken, decodedUser);
-        window.history.replaceState({}, '', '/');
-        
-        // If coming from email verification, show a nice notification
-        const isVerified = params.get('verified') === 'true';
-        if (isVerified) {
-          const now = Date.now();
-          setNotifications(prev => [...prev, { 
-            id: now, 
-            createdAt: now, 
-            text: '✅ تم تفعيل حسابك بنجاح! أهلاً بك في PokéBattle.' 
-          }]);
-        }
-
-        setScreen('selection');
-        setSessionChecked(true);
-        return;
-      } catch (err) {
-        console.error('Auth callback error:', err);
-      }
-    }
     if (oauthError) window.history.replaceState({}, '', '/');
-    restoreSession().finally(() => setSessionChecked(true));
+
+    // Always restore the session from the HttpOnly cookie
+    restoreSession().finally(() => {
+      setSessionChecked(true);
+
+      // Show success notification after a successful email verification
+      if (isVerified) {
+        window.history.replaceState({}, '', '/');
+        const now = Date.now();
+        setNotifications(prev => [...prev, {
+          id: now,
+          createdAt: now,
+          text: '✅ تم تفعيل حسابك بنجاح! أهلاً بك في PokéBattle.',
+        }]);
+      }
+    });
   }, []);
 
   useEffect(() => {

@@ -1,3 +1,15 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// ⚠️  DEPRECATED — BUG-05 FIX
+//
+// This file is a legacy duplicate of DamageEngine.js and is NOT imported
+// by any active module. All damage calculation is handled by the class-based
+// DamageEngine in ./DamageEngine.js, which is used by useBattleEngine.js and
+// AIEngine.js.
+//
+// This file is retained for reference only and MUST NOT be imported in new code.
+// It will be removed in the next cleanup sprint.
+// ══════════════════════════════════════════════════════════════════════════════
+
 // ══════════════════════════════════════════
 // Damage Calculation Engine
 // ══════════════════════════════════════════
