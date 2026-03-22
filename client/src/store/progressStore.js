@@ -216,7 +216,16 @@ export const useProgressStore = create(
             ? serverUser.winsByType
             : (localData.winsByType ?? {}),
           winsWithTeam: localData.winsWithTeam ?? {},
-          pokeXp:       localData.pokeXp       ?? {},
+          // Server pokeXp is authoritative — merge: take max(server, local)
+          pokeXp: (() => {
+            const srv = serverUser.pokeXp || {};
+            const loc = localData.pokeXp  || {};
+            const merged = { ...loc };
+            Object.entries(srv).forEach(([id, xp]) => {
+              merged[id] = Math.max(merged[id] || 0, Number(xp) || 0);
+            });
+            return merged;
+          })(),
           unlockedPokes: localData.unlockedPokes ?? [],
         });
         get().checkAchievements();

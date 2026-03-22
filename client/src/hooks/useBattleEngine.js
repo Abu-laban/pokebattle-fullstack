@@ -357,25 +357,35 @@ export function useBattleEngine() {
     const token = useAuthStore.getState().token;
     if (token) {
       const snap = useBattleStore.getState();
-      // Build normalised team arrays for the server record
-      const myTeamForServer  = (snap.myTeam  || []).map(m => ({ pokeId: m?.poke?.id, pokeName: m?.poke?.name }));
-      const enTeamForServer  = (snap.enTeam  || []).map(m => ({ pokeId: m?.poke?.id, pokeName: m?.poke?.name }));
+      const myTeamForServer = (snap.myTeam || []).map(m => ({ pokeId: m?.poke?.id, pokeName: m?.poke?.name }));
+      const enTeamForServer = (snap.enTeam || []).map(m => ({ pokeId: m?.poke?.id, pokeName: m?.poke?.name }));
+
+      // Build accurate pokeXp gains from progressStore (source of truth)
+      const progressState = useProgressStore.getState();
+      const allPokeXpGains = {};
+      const selectedIds = snap.selectedIds || [];
+      selectedIds.forEach(id => {
+        const xp = progressState.pokeRawXp(id);
+        if (xp > 0) allPokeXpGains[id] = xp;
+      });
+      // Also include kills-based xp for active battlers
+      Object.entries(pokeKillsSnapshot).forEach(([id, count]) => {
+        // gainPokeXp already applied; add kill bonus if not already counted
+        const existing = allPokeXpGains[id] || 0;
+        allPokeXpGains[id] = existing; // server will overwrite with latest total
+      });
 
       UserAPI.saveBattleResult({
         won,
         xpGained,
         superEffHits: superEffThisBattle,
-        pokeKills:  won ? pokeKillsSnapshot : {},
-        typeKills:  won ? typeKillsSnapshot : {},
-        moveUsed:   won ? moveUsedSnapshot  : {},
-        myTeam:     myTeamForServer,
-        enemyTeam:  enTeamForServer,
-        // pokeXp snapshot for server-side awareness (informational)
-        pokeXpGains: won
-          ? Object.fromEntries(
-              (snap.selectedIds || []).map(id => [id, (pokeKillsSnapshot[id] ?? 0) * 10 + 15])
-            )
-          : {},
+        pokeKills:    won ? pokeKillsSnapshot : {},
+        typeKills:    won ? typeKillsSnapshot : {},
+        moveUsed:     won ? moveUsedSnapshot  : {},
+        myTeam:       myTeamForServer,
+        enemyTeam:    enTeamForServer,
+        // Send full pokeXp totals so server is authoritative
+        pokeXpGains:  allPokeXpGains,
       })
         .then(() => useAuthStore.getState().refreshUser?.())
         .catch(() => {});

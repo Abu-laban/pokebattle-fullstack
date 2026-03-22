@@ -53,6 +53,7 @@ const userSchema = new mongoose.Schema({
   winsWithPoke:      { type: Map, of: Number, default: {} },
   winsByType:        { type: Map, of: Number, default: {} },
   moveStats:         { type: Map, of: Number, default: {} },
+  pokeXp:            { type: Map, of: Number, default: {} },
   completedMissions: { type: [String], default: [] },
 
   lastLogin: { type: Date, default: Date.now },
@@ -112,6 +113,7 @@ userSchema.methods.toPublic = function () {
     achievements: this.achievements,
     winsWithPoke: this.winsWithPoke ? Object.fromEntries(this.winsWithPoke) : {},
     winsByType:   this.winsByType   ? Object.fromEntries(this.winsByType)   : {},
+    pokeXp:       this.pokeXp       ? Object.fromEntries(this.pokeXp)       : {},
     createdAt:    this.createdAt,
   };
 };

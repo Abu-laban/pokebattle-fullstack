@@ -103,6 +103,21 @@ const saveBattleResult = async (req, res) => {
       user.markModified('winsByType');
     }
 
+    // ── Sync Pokémon XP totals (client sends authoritative totals) ──────────
+    // Client tracks cumulative pokeXp in progressStore; we overwrite server values
+    // with the latest totals so server stays in sync.
+    if (body.pokeXpGains && Object.keys(body.pokeXpGains).length) {
+      if (!user.pokeXp) user.pokeXp = new Map();
+      Object.entries(body.pokeXpGains).forEach(([id, totalXp]) => {
+        const key = String(id);
+        const serverVal = user.pokeXp.get(key) || 0;
+        // Only update if client value is higher (never decrease)
+        const newVal = Math.max(serverVal, Number(totalXp) || 0);
+        user.pokeXp.set(key, newVal);
+      });
+      user.markModified('pokeXp');
+    }
+
     // ── XP + level up ────────────────────────────────────────────────────
     const oldLevel = user.level;
     const newLevel = user.addXP(xpEarned);
