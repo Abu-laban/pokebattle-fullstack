@@ -36,16 +36,28 @@ export const AuthAPI = {
 };
 
 export const UserAPI = {
-  getProfile: () => request('/user'),
-  getPublicProfile: (username) => request(`/user/${username}`),
+  getProfile:       ()             => request('/user'),
+  getPublicProfile: (username)     => request(`/user/${username}`),
   syncProgress: (xpToAdd, achievements = []) =>
     request('/user/progress', { method: 'PATCH', body: { xpToAdd, achievements } }),
 
   // BUG-02 FIX: All battle results now go to /battle/result (canonical endpoint).
-  // This endpoint creates a BattleRecord for history AND updates user stats.
-  // The old /user/battle-result route has been removed from the server.
   saveBattleResult: (payload) =>
     request('/battle/result', { method: 'POST', body: payload }),
+
+  // Fetch mission progress from server
+  getMissions: () => request('/missions'),
+
+  // Reset battle stats + XP/level to 1 while keeping unlocks & missions
+  resetStats: () => request('/user/reset-stats', { method: 'POST' }),
+
+  // Complete a mission and grant reward
+  completeMission: (missionId, rewardXp = 0) =>
+    request('/missions/complete', { method: 'POST', body: { missionId, rewardXp } }),
+
+  // Sync goal progress (partial progress before completion)
+  updateMissionProgress: (missionId, goalProgress) =>
+    request('/missions/progress', { method: 'PATCH', body: { missionId, goalProgress } }),
 };
 
 export const BattleAPI = {

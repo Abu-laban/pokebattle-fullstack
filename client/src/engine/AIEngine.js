@@ -38,8 +38,8 @@ export class AIEngine {
     const liveTgts = targets.filter(t => t?.isAlive);
     if (!liveTgts.length || !moves.length) return { moveIdx: 0, targetFieldPos: 0 };
 
-    // Easy mode: 40% chance to pick randomly (makes early fights forgiving)
-    if (difficulty === 'easy' && Math.random() < 0.40) {
+    // Easy mode: 50% chance to pick randomly for beginners (levels 1-9)
+    if (difficulty === 'easy' && Math.random() < 0.50) {
       const safeMoves = moves.filter(m => !m.u);
       const randMove  = safeMoves[Math.floor(Math.random() * safeMoves.length)] || moves[0];
       return {
@@ -198,15 +198,22 @@ export class AIEngine {
   }
 
   // ── Determine difficulty based on tower streak / game context ────────────
-  // level: trainer level (1-50+), towerStreak: for tower mode
+  //
+  // Normal battle AI difficulty (matches BST margin tiers):
+  //   Level 1-9   → easy   (40% random moves, no status spam)
+  //   Level 10-24 → normal (smart damage, light status)
+  //   Level 25+   → hard   (full optimization, focus fire)
+  //
+  // Tower difficulty scales with streak:
+  //   Streak 0-4  → easy
+  //   Streak 5-14 → normal
+  //   Streak 15+  → hard
   static getDifficulty(towerStreak = 0, playerLevel = 1) {
-    // Tower: streak-based scaling
     if (towerStreak > 0) {
       if (towerStreak >= 15) return 'hard';
       if (towerStreak >= 5)  return 'normal';
       return 'easy';
     }
-    // Normal battle: scale with player level
     if (playerLevel >= 25) return 'hard';
     if (playerLevel >= 10) return 'normal';
     return 'easy';

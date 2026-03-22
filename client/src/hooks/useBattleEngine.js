@@ -119,7 +119,8 @@ export function useBattleEngine() {
       log('🔥 الهجوم الناري أذاب تجميد ' + target.poke.name + '!', 'sys');
     }
 
-    const { dmg, mult, stab, absorbed } = DamageEngine.calc(mv, attacker, target, weather);
+    const playerLevel = useAuthStore.getState().user?.level ?? progress.level ?? 1;
+    const { dmg, mult, stab, absorbed, crit } = DamageEngine.calc(mv, attacker, target, weather, playerLevel);
 
     if (absorbed) {
       const dAb = target.ability;
@@ -142,10 +143,10 @@ export function useBattleEngine() {
     target.dealDamage(dmg);
     if (mv.u) attacker.consumeUlt(); else attacker.chargeUlt(20);
     const hitFieldPos = s.eField.findIndex(ti => ti !== null && s.enTeam[ti]?.poke?.name === target.poke.name);
-    if (hitFieldPos >= 0) emitBattleAnim(mult >= 2 ? 'superEff' : 'hit', hitFieldPos, true);
+    if (hitFieldPos >= 0) emitBattleAnim(mult >= 2 ? 'superEff' : 'hit', hitFieldPos, true, { damage: dmg, mult, crit });
 
     const effTxt = mult === 0 ? ' مناعة!' : mult >= 4 ? ' فعّال جداً جداً! 🔥🔥' : mult >= 2 ? ' فعّال جداً! 🔥' : mult <= 0.25 ? ' غير فعّال أبداً...' : mult <= 0.5 ? ' غير فعّال...' : '';
-    log('⚔ ' + attacker.poke.name + ' → ' + target.poke.name + ': ' + mv.n + ' (-' + dmg + ' HP)' + effTxt + (stab > 1 ? ' [STAB]' : '') + (mv.u ? ' [ULT!]' : ''), 'playerAtk');
+    log('⚔ ' + attacker.poke.name + ' → ' + target.poke.name + ': ' + mv.n + ' (-' + dmg + ' HP)' + effTxt + (stab > 1 ? ' [STAB]' : '') + (crit ? ' [CRIT! 💥]' : '') + (mv.u ? ' [ULT!]' : ''), 'playerAtk');
 
     // Track move usage for missions
     moveUsedRef[mv.n] = (moveUsedRef[mv.n] || 0) + 1;
@@ -220,7 +221,8 @@ export function useBattleEngine() {
     emitBattleAnim('attack', fieldPos, true);
     if (mv.t === 'FIRE' && target.hasStatus('FRZ')) target.removeStatus('FRZ');
 
-    const { dmg, mult, absorbed } = DamageEngine.calc(mv, attacker, target, weather);
+    const enemyCalcLevel = useAuthStore.getState().user?.level ?? progress.level ?? 1;
+    const { dmg, mult, absorbed, crit } = DamageEngine.calc(mv, attacker, target, weather, enemyCalcLevel);
     if (absorbed) {
       log('🛡 ' + target.poke.name + ': مناعة!', 'sys');
       if (mv.u) attacker.consumeUlt(); else attacker.chargeUlt(10);
@@ -233,11 +235,11 @@ export function useBattleEngine() {
     target.dealDamage(dmg);
     if (mv.u) attacker.consumeUlt(); else attacker.chargeUlt(20);
     const playerHitPos = s.pField.findIndex(ti => ti !== null && s.myTeam[ti]?.poke?.name === target.poke.name);
-    if (playerHitPos >= 0) emitBattleAnim(mult >= 2 ? 'superEff' : 'hit', playerHitPos, false);
+    if (playerHitPos >= 0) emitBattleAnim(mult >= 2 ? 'superEff' : 'hit', playerHitPos, false, { damage: dmg, mult, crit });
 
     const effTxt = mult === 0 ? ' مناعة!' : mult >= 4 ? ' فعّال جداً جداً! 🔥🔥' : mult >= 2 ? ' فعّال جداً! 🔥' : mult <= 0.25 ? ' غير فعّال أبداً...' : mult <= 0.5 ? ' غير فعّال...' : '';
     const ultTag = mv.u ? ' [ULT!]' : '';
-    log('💥 ' + attacker.poke.name + ' → ' + target.poke.name + ': ' + mv.n + ' (-' + dmg + ' HP)' + effTxt + ultTag, 'enemyAtk');
+    log('💥 ' + attacker.poke.name + ' → ' + target.poke.name + ': ' + mv.n + ' (-' + dmg + ' HP)' + effTxt + (crit ? ' [CRIT! 💥]' : '') + ultTag, 'enemyAtk');
 
     const sec = MOVE_SECONDARY[mv.n];
     if (sec && Math.random() < sec.chance && target.isAlive) StatusEngine.apply(target, sec.status, log);
@@ -325,6 +327,9 @@ export function useBattleEngine() {
       progress.gainXP(xpGained);
       progress.recordWin();
       const ids = useBattleStore.getState().selectedIds || [];
+      // Record win for EVERY Pokémon in the selected team of 4 (not just active slots).
+      // This feeds the WIN_WITH mission goals and Pokémon unlock requirements.
+      ids.forEach(id => progress.recordWinWithPoke?.(id));
       progress.recordWinWithTeam?.(ids);
     } else {
       progress.recordLoss();
@@ -351,13 +356,26 @@ export function useBattleEngine() {
     // ── Sync to server ──
     const token = useAuthStore.getState().token;
     if (token) {
+      const snap = useBattleStore.getState();
+      // Build normalised team arrays for the server record
+      const myTeamForServer  = (snap.myTeam  || []).map(m => ({ pokeId: m?.poke?.id, pokeName: m?.poke?.name }));
+      const enTeamForServer  = (snap.enTeam  || []).map(m => ({ pokeId: m?.poke?.id, pokeName: m?.poke?.name }));
+
       UserAPI.saveBattleResult({
         won,
         xpGained,
         superEffHits: superEffThisBattle,
-        pokeKills: won ? pokeKillsSnapshot : {},
+        pokeKills:  won ? pokeKillsSnapshot : {},
         typeKills:  won ? typeKillsSnapshot : {},
-        moveUsed:  won ? moveUsedSnapshot  : {},
+        moveUsed:   won ? moveUsedSnapshot  : {},
+        myTeam:     myTeamForServer,
+        enemyTeam:  enTeamForServer,
+        // pokeXp snapshot for server-side awareness (informational)
+        pokeXpGains: won
+          ? Object.fromEntries(
+              (snap.selectedIds || []).map(id => [id, (pokeKillsSnapshot[id] ?? 0) * 10 + 15])
+            )
+          : {},
       })
         .then(() => useAuthStore.getState().refreshUser?.())
         .catch(() => {});
@@ -532,7 +550,8 @@ export function useBattleEngine() {
       }
 
       const action = actions[idx];
-      const delay  = idx === 0 ? 0 : 500;
+      // 950 ms between actions gives the player time to see damage numbers and log entries
+      const delay  = idx === 0 ? 0 : 950;
 
       safeTimeout(() => {
         // Check if the actor is still alive before executing

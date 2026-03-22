@@ -12,10 +12,13 @@ import { StatsOverlay }     from '../Overlays/StatsOverlay.jsx';
 import { PokeHoverCard }    from '../UI/PokeHoverCard.jsx';
 import { getPokeAbility }   from '../../data/abilities.js';
 import { POKE_STATS }       from '../../data/pokeStats.js';
+import { useMatchmaking }    from '../../hooks/useMatchmaking.js';
+import { MatchmakingOverlay } from '../Battle/MatchmakingOverlay.jsx';
 import styles               from './SelectionScreen.module.css';
 
 const GEN_RANGES = {
-  all: [1, 999],
+  all:      [1, 999],
+  unlocked: [1, 999], // filtered separately by unlock status
   1:   [1,   151],
   2:   [152, 251],
   3:   [252, 386],
@@ -26,7 +29,8 @@ const GEN_RANGES = {
 };
 
 const GEN_LABELS = {
-  all: { label: 'الكل',    icon: '✦',  sub: '894 بوكيمون' },
+  all:      { label: 'الكل',      icon: '✦',  sub: '894 بوكيمون' },
+  unlocked: { label: 'مفتوحة',    icon: '🔓', sub: 'بوكيمونك' },
   1:   { label: 'كانتو',   icon: '🔴', sub: 'Gen I · R/B/Y' },
   2:   { label: 'جوتو',    icon: '🌿', sub: 'Gen II · G/S/C' },
   3:   { label: 'هوين',    icon: '🌊', sub: 'Gen III · R/S/E' },
@@ -72,6 +76,33 @@ export function SelectionScreen() {
 
   const [search, setSearch] = useState('');
 
+  const {
+    status: mmStatus,
+    opponent: mmOpponent,
+    startSearch,
+    cancelSearch,
+    resetSearch,
+  } = useMatchmaking();
+
+  // When matchmaking times out → start bot battle.
+  // Handled here with useEffect (not in overlay) to avoid stale closure issues.
+  const handleStartBot = useCallback(() => {
+    resetSearch();
+    // Small tick so state update settles before startBattle reads selectedIds
+    setTimeout(() => startBattle(), 50);
+  }, [resetSearch, startBattle]);
+
+  // Watch for timeout status change and auto-trigger bot battle
+  useEffect(() => {
+    if (mmStatus === 'timeout') {
+      const t = setTimeout(() => {
+        resetSearch();
+        startBattle();
+      }, 800); // short delay to show "no player found" message
+      return () => clearTimeout(t);
+    }
+  }, [mmStatus]);
+
   const handleSelectPoke = useCallback((id, e) => {
     togglePoke(id);
   }, [togglePoke]);
@@ -79,11 +110,12 @@ export function SelectionScreen() {
   const filtered = useMemo(() => {
     const [lo, hi] = GEN_RANGES[currentGen] || [1, 999];
     return DEX.filter(p => {
-      const inGen = p.id >= lo && p.id <= hi;
+      const inGen    = p.id >= lo && p.id <= hi;
       const inSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
-      return inGen && inSearch;
+      const inUnlock = currentGen === 'unlocked' ? isUnlocked(p) : true;
+      return inGen && inSearch && inUnlock;
     });
-  }, [currentGen, search]);
+  }, [currentGen, search, isUnlocked]);
 
   const canStart = selectedIds.length >= 4;
 
@@ -164,11 +196,14 @@ export function SelectionScreen() {
           </div>
         </button>
         <button
-          className={styles.startBtn}
-          disabled={!canStart}
-          onClick={startBattle}
+          className={`${styles.startBtn} ${mmStatus === 'searching' ? styles.startBtnSearching : ''}`}
+          disabled={!canStart || mmStatus === 'searching'}
+          onClick={canStart && mmStatus === 'idle' ? startSearch : undefined}
         >
-          ⚔ بدء المعركة 2v2
+          {mmStatus === 'searching'
+            ? <><span className={styles.startBtnSpinner} />البحث عن خصم...</>
+            : '🌐 بدء المعركة 2v2'
+          }
         </button>
         <button
           className={styles.towerBtn}
@@ -184,6 +219,14 @@ export function SelectionScreen() {
         selectedIds={selectedIds}
         unlockedFn={isUnlocked}
         onSelect={handleSelectPoke}
+      />
+
+      {/* ── Matchmaking overlay (shown when searching or match found) ── */}
+      <MatchmakingOverlay
+        status={mmStatus}
+        opponent={mmOpponent}
+        onCancel={cancelSearch}
+        onStartBot={handleStartBot}
       />
     </div>
   );

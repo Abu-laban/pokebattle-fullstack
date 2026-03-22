@@ -59,4 +59,40 @@ const syncProgress = async (req, res) => {
 // (battleController.saveBattleResult) which is the canonical endpoint and
 // also creates a BattleRecord document for history tracking.
 
-module.exports = { getProfile, getPublicProfile, syncProgress };
+// ── POST /api/user/reset-stats ────────────────────────────────────────────
+// Resets battle stats, XP, and level to 1 while PRESERVING:
+//   - winsWithPoke  (Pokémon unlock requirements)
+//   - winsByType    (type defeat unlock requirements)
+//   - completedMissions / achievements
+//   - avatar, username, email (identity)
+const resetStats = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ error: 'المستخدم غير موجود' });
+
+    // Reset combat stats and progression
+    user.level = 1;
+    user.xp    = 0;
+    user.stats = {
+      wins:         0,
+      losses:       0,
+      draws:        0,
+      totalDamage:  0,
+      superEffHits: 0,
+      towerBest:    0,
+      favPoke:      user.stats?.favPoke ?? null, // keep favourite as cosmetic
+    };
+
+    // winsWithPoke, winsByType, completedMissions, achievements are intentionally kept
+
+    user.markModified('stats');
+    await user.save();
+
+    res.json({ ok: true, user: user.toPublic() });
+  } catch (err) {
+    console.error('resetStats error:', err);
+    res.status(500).json({ error: 'حدث خطأ داخلي في الخادم' });
+  }
+};
+
+module.exports = { getProfile, getPublicProfile, syncProgress, resetStats };

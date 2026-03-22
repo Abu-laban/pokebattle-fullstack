@@ -1,10 +1,14 @@
-// FighterCard — no class badges; shows swap/target UI
+// FighterCard — Battle card with floating damage numbers
+// Attack indicator badges are rendered OUTSIDE the card (by FighterCardWithBadge)
+// to avoid being clipped by overflow:hidden on the card and arena containers.
 import { useRef, useEffect, useState } from 'react';
 import { HPBar }                  from '../UI/HPBar.jsx';
 import { loadSpriteWithFallback } from '../../engine/sprites.js';
-import { subscribeBattleAnim } from '../../store/battleStore.js';
+import { subscribeBattleAnim }    from '../../store/battleStore.js';
 import { STAT_AR }                from '../../engine/status.js';
 import { getPokeAbility }         from '../../data/abilities.js';
+import { TYPE_COLORS }            from '../../data/typeChart.js';
+import { DamageEngine }           from '../../engine/DamageEngine.js';
 import styles                     from './FighterCard.module.css';
 
 const STATUS_CFG = {
@@ -16,37 +20,159 @@ const STATUS_CFG = {
   CNF: { icon:'😵', label:'مرتبك', bg:'#E65100', fg:'#FFE0B2' },
 };
 
+// Slot accent colours
+const SLOT_COLORS = ['#4FC3F7', '#FF6B35'];
+
+/** Floating damage number that animates upward then fades */
+function DmgFloat({ damage, color, isCrit, isHeal, id }) {
+  return (
+    <div
+      key={id}
+      className={`${styles.dmgFloat} ${isCrit ? styles.crit : ''} ${isHeal ? styles.heal : ''}`}
+      style={{ color }}
+    >
+      {isHeal ? `+${damage}` : `-${damage}`}
+      {isCrit && <span style={{ fontSize: 10, marginLeft: 3, opacity: .9 }}>CRIT!</span>}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  AttackBadgesOverlay — rendered OUTSIDE the card, positioned
+//  absolutely relative to the .cardWrapper so overflow:hidden on
+//  the card itself never clips the badge.
+// ─────────────────────────────────────────────────────────────────
+export function AttackBadgesOverlay({ attackers }) {
+  if (!attackers?.length) return null;
+  return (
+    <div className={styles.badgesOverlay}>
+      {attackers.map((a, i) => {
+        const typeColor  = TYPE_COLORS[a.moveType] || '#888';
+        const effInfo    = DamageEngine.effLabel(a.mult);
+        const isTargeted = a.targeted !== false; // default true for backwards compat
+
+        if (!isTargeted) {
+          // ── NOT targeting this enemy — show a dimmed "going elsewhere" hint ──
+          return (
+            <div key={i} className={styles.attackBadgeAway}>
+              <span className={styles.attackBadgeDot} style={{ background: a.slotColor, opacity: .5 }} />
+              <span className={styles.attackBadgeSlot} style={{ color: a.slotColor, opacity: .5 }}>{a.slotLabel}</span>
+              <span className={styles.attackBadgeMoveAway}>{a.moveName}</span>
+              {/* Show what the effectiveness WOULD be if aimed here */}
+              {effInfo && (
+                <span className={styles.attackBadgeWouldBe} style={{ color: effInfo.color }}>
+                  {effInfo.text} لو استهدف
+                </span>
+              )}
+              <span className={styles.attackBadgeNotHere}>↗ يستهدف الآخر</span>
+            </div>
+          );
+        }
+
+        // ── Targeting this enemy ──────────────────────────────────────────────
+        // Determine border glow color based on effectiveness
+        const glowColor = effInfo
+          ? effInfo.color
+          : 'rgba(255,255,255,.2)';
+
+        return (
+          <div
+            key={i}
+            className={styles.attackBadge}
+            style={{ borderColor: glowColor + '55', boxShadow: `0 0 8px ${glowColor}22` }}
+          >
+            <span className={styles.attackBadgeDot}  style={{ background: a.slotColor }} />
+            <span className={styles.attackBadgeSlot} style={{ color: a.slotColor }}>{a.slotLabel}</span>
+            <span className={styles.attackBadgeMove}>{a.moveName}</span>
+            <span
+              className={styles.attackBadgeType}
+              style={{
+                background: typeColor + '30',
+                color: typeColor,
+                border: `1px solid ${typeColor}55`,
+              }}
+            >
+              {a.moveType}
+            </span>
+            {effInfo ? (
+              <span
+                className={styles.attackBadgeEff}
+                style={{
+                  color:      effInfo.color,
+                  background: effInfo.color + '18',
+                  border:     `1px solid ${effInfo.color}44`,
+                  padding:    '1px 5px',
+                  borderRadius: '5px',
+                  fontWeight: 900,
+                }}
+              >
+                {effInfo.text}
+              </span>
+            ) : (
+              <span className={styles.attackBadgeEffNeutral}>عادي</span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  FighterCard — the card itself (no badge rendering inside)
+// ─────────────────────────────────────────────────────────────────
 export function FighterCard({
   member, isPlayer, isActive, fieldPos,
   onSwap, onCancelSwap, pendingSwap,
   isTarget, onTarget,
 }) {
-  const imgRef = useRef(null);
+  const imgRef  = useRef(null);
   const [animCls, setAnimCls] = useState('');
+  const [floats,  setFloats]  = useState([]);
 
   useEffect(() => {
     if (imgRef.current && member?.poke)
       loadSpriteWithFallback(imgRef.current, member.poke.id, member.poke.name);
   }, [member?.poke?.id]);
 
-  // Subscribe to battle hit animations
+  // ── Battle animation events ─────────────────────────────────────────────
   useEffect(() => {
-    return subscribeBattleAnim(({ type, fieldPos: fp, isEnemy: ie }) => {
-      // React if this card matches: enemy cards react to enemy events, player to player
+    return subscribeBattleAnim(({ type, fieldPos: fp, isEnemy: ie, damage, mult, crit }) => {
       const cardIsEnemy = !isPlayer;
       if (ie !== cardIsEnemy) return;
-      if (fp !== fieldPos) return;
-      const cls = type === 'attack' ? styles.sprAttack
-        : type === 'superEff' ? styles.sprSuperEff
-        : type === 'hit' ? styles.sprHit
-        : type === 'heal' ? styles.sprHeal : '';
-      if (!cls) return;
-      setAnimCls(cls);
-      setTimeout(() => setAnimCls(''), 600);
+      if (fp !== fieldPos)   return;
+
+      // Sprite animation
+      const cls = type === 'attack'   ? styles.sprAttack
+                : type === 'superEff' ? styles.sprSuperEff
+                : type === 'hit'      ? styles.sprHit
+                : type === 'heal'     ? styles.sprHeal : '';
+      if (cls) {
+        setAnimCls(cls);
+        setTimeout(() => setAnimCls(''), 620);
+      }
+
+      // Floating damage number
+      if ((type === 'hit' || type === 'superEff') && damage > 0) {
+        const effColor = mult >= 4 ? '#FF1744'
+                       : mult >= 2 ? '#FF6B35'
+                       : mult <= 0.25 ? '#78909C'
+                       : mult <= 0.5  ? '#B0BEC5'
+                       : crit         ? '#FFD600'
+                       : '#FFFFFF';
+        const id = Date.now() + Math.random();
+        setFloats(prev => [...prev.slice(-3), { id, damage, color: effColor, isCrit: !!crit }]);
+        setTimeout(() => setFloats(prev => prev.filter(f => f.id !== id)), 1150);
+      }
+      if (type === 'heal' && damage > 0) {
+        const id = Date.now() + Math.random();
+        setFloats(prev => [...prev.slice(-3), { id, damage, color: '#69F0AE', isHeal: true }]);
+        setTimeout(() => setFloats(prev => prev.filter(f => f.id !== id)), 1100);
+      }
     });
   }, [isPlayer, fieldPos]);
 
-  // ── Empty slot ──────────────────────────────────────────────────────────────
+  // ── Empty slot ─────────────────────────────────────────────────────────
   if (!member) {
     return (
       <div className={`${styles.card} ${styles.empty} ${isPlayer ? styles.player : styles.enemy}`}>
@@ -66,15 +192,23 @@ export function FighterCard({
     <div
       className={[
         styles.card,
-        isPlayer  ? styles.player : styles.enemy,
-        fainted   ? styles.fainted : '',
-        isActive  ? styles.active  : '',
-        isTarget  ? styles.target  : '',
+        isPlayer    ? styles.player : styles.enemy,
+        fainted     ? styles.fainted : '',
+        isActive    ? styles.active  : '',
+        isTarget    ? styles.target  : '',
         pendingSwap ? styles.pendingSwap : '',
       ].filter(Boolean).join(' ')}
       onClick={isTarget && onTarget ? onTarget : undefined}
       style={{ cursor: isTarget && onTarget ? 'pointer' : 'default' }}
     >
+      {/* Floating damage numbers — inside card but z-index above content */}
+      {floats.map(f => (
+        <DmgFloat key={f.id} id={f.id}
+          damage={f.damage} color={f.color}
+          isCrit={f.isCrit} isHeal={f.isHeal}
+        />
+      ))}
+
       {/* Target overlay */}
       {isTarget && (
         <div className={styles.targetOverlay}>
@@ -103,7 +237,6 @@ export function FighterCard({
           {isActive && !fainted && <span className={styles.activeDot} />}
         </div>
 
-        {/* HP */}
         <div className={styles.hpRow}>
           <span style={{ color: hpColor, fontWeight: 700, fontSize: 10 }}>
             {hp}<span style={{ color: 'rgba(255,255,255,.35)', fontWeight: 400 }}>/{poke.hp}</span>
@@ -112,7 +245,6 @@ export function FighterCard({
         </div>
         <HPBar current={hp} max={poke.hp} />
 
-        {/* ULT */}
         <div className={styles.ultRow}>
           <span className={styles.ultLabel}>ULT</span>
           <div className={styles.ultTrack}>
@@ -124,7 +256,6 @@ export function FighterCard({
           </span>
         </div>
 
-        {/* Ability */}
         {ability && (
           <div className={styles.abilityRow}>
             <span className={styles.abilityIcon}>{ability.icon}</span>
@@ -132,7 +263,6 @@ export function FighterCard({
           </div>
         )}
 
-        {/* Status + stages */}
         {(statusKeys.length > 0 || stagesPairs.length > 0) && (
           <div className={styles.badges}>
             {statusKeys.map(k => {
@@ -152,7 +282,7 @@ export function FighterCard({
         )}
       </div>
 
-      {/* Swap button (player side only) */}
+      {/* Swap / cancel buttons */}
       {onSwap && !fainted && !pendingSwap && (
         <button className={styles.swapBtn} onClick={e => { e.stopPropagation(); onSwap(); }}
           title="تبديل البوكيمون">🔄</button>

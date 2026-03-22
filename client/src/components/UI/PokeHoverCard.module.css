@@ -252,3 +252,82 @@
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+/* ══════════════════════════════════════════
+   POKÉMON XP SECTION
+══════════════════════════════════════════ */
+.xpSection {
+  padding: 10px 16px 10px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.xpHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.xpLabel {
+  font-family: 'Cairo', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,.45);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+}
+.xpIcon { font-size: 13px; }
+
+.xpLevelBadge {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  font-weight: 900;
+  padding: 3px 8px;
+  border-radius: 7px;
+}
+
+.xpBarTrack {
+  height: 8px;
+  background: rgba(255,255,255,.07);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.xpBarFill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width .5s cubic-bezier(.4,0,.2,1);
+  min-width: 3px;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.xpNumbers {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.xpCurrent {
+  font-family: 'Cairo', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,.7);
+}
+.xpTotal {
+  font-family: 'Cairo', sans-serif;
+  font-size: 10px;
+  color: rgba(255,255,255,.35);
+}
+
+.xpHint {
+  font-family: 'Cairo', sans-serif;
+  font-size: 10px;
+  color: rgba(255,214,0,.55);
+  line-height: 1.4;
+  background: rgba(255,214,0,.05);
+  border-radius: 6px;
+  padding: 4px 8px;
+  border: 1px solid rgba(255,214,0,.12);
+}

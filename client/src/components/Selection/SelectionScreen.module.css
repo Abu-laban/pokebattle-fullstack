@@ -63,6 +63,8 @@
 
 /* Gen accent colors */
 .g-all.active  { background:linear-gradient(145deg,rgba(255,214,0,.16),rgba(255,107,53,.11)); border-color:rgba(255,214,0,.5); box-shadow:0 8px 22px rgba(255,214,0,.12); }
+.g-unlocked.active { background:linear-gradient(145deg,rgba(102,187,106,.18),rgba(79,195,247,.12)); border-color:rgba(102,187,106,.55); box-shadow:0 8px 22px rgba(102,187,106,.14); }
+.g-unlocked .genIcon { filter: drop-shadow(0 0 5px rgba(102,187,106,.7)); }
 .g-1.active    { background:linear-gradient(145deg,rgba(229,57,53,.18),rgba(255,112,67,.12)); border-color:rgba(229,57,53,.55); box-shadow:0 8px 22px rgba(229,57,53,.15); }
 .g-2.active    { background:linear-gradient(145deg,rgba(255,179,0,.18),rgba(129,199,132,.12)); border-color:rgba(255,179,0,.55); box-shadow:0 8px 22px rgba(255,179,0,.15); }
 .g-3.active    { background:linear-gradient(145deg,rgba(21,101,192,.18),rgba(56,142,60,.14)); border-color:rgba(21,101,192,.55); box-shadow:0 8px 22px rgba(21,101,192,.15); }
@@ -595,4 +597,91 @@
 @keyframes overlayAppear {
   from { opacity: 0; }
   to   { opacity: 1; }
+}
+/* ═══════════════════════════════════════════
+   RESPONSIVE — SelectionScreen
+   ═══════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+
+  /* ── Profile bar: wrap content ── */
+  .profileBar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .profileLeft  { gap: 8px; }
+  .profileRight {
+    font-size: 11px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .levelBadge { font-size: 9px; }
+  .rankTitle  { font-size: 10px; }
+
+  /* ── Gen tabs: smaller ── */
+  .genTabs { gap: 5px; }
+  .genTab  { min-width: 54px; padding: 8px 7px; border-radius: 13px; }
+  .genIcon  { font-size: 17px; }
+  .genLabel { font-size: 11px; }
+  .genSub   { font-size: 9px; }
+
+  /* ── Pokemon grid: smaller cards ── */
+  .grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+  .card { padding: 10px 6px 8px; border-radius: 14px; }
+  .cardImg { width: 64px; height: 64px; }
+  .cardName { font-size: 10px; }
+  .cardHp   { font-size: 9px; }
+  .bstTag   { font-size: 9px; }
+
+  /* ── Team bar: smaller slots ── */
+  .teamSlot { min-width: 88px; min-height: 115px; padding: 8px 6px; }
+
+  /* ── Action buttons: wrap ── */
+  .actions { flex-wrap: wrap; gap: 8px; }
+  .randomBtn { flex: 1 1 100%; order: 3; padding: 12px; font-size: 13px; }
+  .startBtn  { flex: 1 1 calc(60% - 4px); padding: 12px; font-size: 13px; }
+  .towerBtn  { flex: 1 1 calc(40% - 4px); padding: 12px; font-size: 13px; }
+}
+
+@media (max-width: 480px) {
+  /* Extra small: 2 cols forced */
+  .grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .card { padding: 8px 5px 7px; }
+  .cardImg { width: 56px; height: 56px; }
+
+  /* Tabs: very compact */
+  .genTab  { min-width: 46px; padding: 7px 5px; }
+  .genLabel { font-size: 10px; }
+  .genSub   { display: none; }
+
+  /* Team slots: horizontal scroll */
+  .teamBar { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; padding: 10px 12px; gap: 8px; }
+  .teamSlot { min-width: 80px; flex-shrink: 0; }
+}
+
+/* ── Start button: searching state ─────────────────────────────── */
+@keyframes spinnerRot { to { transform: rotate(360deg); } }
+
+.startBtnSearching {
+  background: linear-gradient(135deg, rgba(79,195,247,.2), rgba(124,77,255,.15)) !important;
+  border-color: rgba(79,195,247,.45) !important;
+  color: #4FC3F7 !important;
+  cursor: wait !important;
+  animation: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+}
+
+.startBtnSpinner {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(79,195,247,.3);
+  border-top-color: #4FC3F7;
+  border-radius: 50%;
+  animation: spinnerRot .7s linear infinite;
+  flex-shrink: 0;
 }

@@ -195,3 +195,83 @@
   100% { background: var(--c, rgba(255,255,255,.03)); }
 }
 .mv:active:not(:disabled) { animation: mvPress .25s ease both; }
+/* ── Effectiveness chip on move button ─────────────────────────── */
+.effChip {
+  font-size: 9px;
+  font-weight: 900;
+  padding: 1px 5px;
+  border-radius: 5px;
+  font-family: 'Cairo', sans-serif;
+  margin-left: auto;
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: .3px;
+}
+
+/* ── Small target hint in header ────────────────────────────────── */
+.targetHintSmall {
+  font-size: 10px;
+  color: rgba(255,214,0,.75);
+  font-family: 'Cairo', sans-serif;
+  font-weight: 700;
+  margin-left: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90px;
+}
+
+/* ── Target name in committed view ──────────────────────────────── */
+.committedTarget {
+  font-size: 10px;
+  color: rgba(255,255,255,.45);
+  font-family: 'Cairo', sans-serif;
+  margin-left: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — DualMovePanel
+   ═══════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  .panel   { padding: 9px 9px 10px; border-radius: 14px; gap: 6px; }
+
+  /* Header */
+  .pokeName { font-size: 11px; }
+  .slot     { width: 20px; height: 20px; font-size: 8px; }
+  .readyBadge, .swapBadge { font-size: 9px; padding: 1px 6px; }
+  .targetHintSmall { max-width: 70px; font-size: 9px; }
+
+  /* Moves 2-col stays but smaller */
+  .moves { gap: 5px; }
+  .mv {
+    padding: 7px 7px;
+    min-height: 56px;
+    border-radius: 10px;
+  }
+  .mvName  { font-size: 11px; }
+  .mvType  { font-size: 7px; padding: 1px 4px; }
+  .mvPwr   { font-size: 9px; }
+  .mvCatIcon { font-size: 10px; }
+  .effChip { font-size: 8px; padding: 1px 3px; }
+
+  /* Committed view */
+  .committedInfo  { padding: 8px 10px; }
+  .committedName  { font-size: 11px; }
+  .committedTarget { font-size: 9px; max-width: 60px; }
+
+  /* Swap button */
+  .swapInPanel { padding: 8px; font-size: 11px; border-radius: 10px; }
+}
+
+@media (max-width: 480px) {
+  .panel   { padding: 7px 7px 8px; }
+  .mv      { padding: 6px 6px; min-height: 50px; }
+  .mvName  { font-size: 10px; }
+  .ultMv   { padding: 8px 7px; }
+  .ultTag  { font-size: 7px; padding: 1px 4px; }
+}

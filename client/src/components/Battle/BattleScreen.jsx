@@ -5,8 +5,10 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
 import { useBattleStore, subscribeBattleAnim } from '../../store/battleStore.js';
 import { useBattleEngine }  from '../../hooks/useBattleEngine.js';
+import { usePvPEngine }     from '../../hooks/usePvPEngine.js';
 import { MOVE_EFFECTS }     from '../../data/moveEffects.js';
-import { FighterCard }      from './FighterCard.jsx';
+import { DamageEngine }     from '../../engine/DamageEngine.js';
+import { FighterCard, AttackBadgesOverlay } from './FighterCard.jsx';
 import { WeatherBar }       from './WeatherBar.jsx';
 import { BattleLog }        from './BattleLog.jsx';
 import { MoveGrid }         from './MoveGrid.jsx';
@@ -36,6 +38,94 @@ function getAliveEnemyFieldPositions(eField, enTeam) {
     .map(({ fieldPos }) => fieldPos);
 }
 
+/**
+ * Compute attack indicators for enemy cards.
+ * Returns a map: enemyFieldPos → [{ slotLabel, slotColor, moveName, moveType, mult }]
+ * Used to show player-selected moves on the enemy's card before execution.
+ */
+const SLOT_COLORS = ['#4FC3F7', '#FF6B35'];
+
+/**
+ * Compute attack indicators for all enemy field positions.
+ *
+ * For each enemy slot returns an array of attacker descriptors IF that slot
+ * is being targeted, OR a single "not targeted" entry if a player is attacking
+ * the OTHER slot — so the player can see at a glance what hits what.
+ *
+ * Each descriptor: { slotLabel, slotColor, moveName, moveType, mult, targeted }
+ *   targeted = false  →  grayed-out "not aimed here" indicator
+ */
+function computeAttackIndicators(myTeam, enTeam, pField, eField, pendingMoves, pendingTargets) {
+  // Collect what each player slot is doing
+  const playerActions = []; // { fi, mv, tPos, mult }
+
+  for (let fi = 0; fi < 2; fi++) {
+    const mi = pendingMoves[fi];
+    if (mi === null || mi === undefined) continue;
+    const myIdx = pField[fi];
+    if (myIdx === null) continue;
+    const member = myTeam[myIdx];
+    if (!member || member.fainted) continue;
+    const mv = member.poke?.moves?.[mi];
+    if (!mv || mv.p === 0) continue; // status moves skipped
+
+    const tPos   = pendingTargets[fi] ?? 0;
+    const enIdx  = eField[tPos];
+    if (enIdx === null || enIdx === undefined) continue;
+    const defMember = enTeam[enIdx];
+    if (!defMember || defMember.fainted) continue;
+
+    playerActions.push({
+      fi,
+      mv,
+      tPos,
+      mult: DamageEngine.effectiveness(mv.t, defMember.poke?.types ?? []),
+    });
+  }
+
+  // Build map keyed by enemy field position
+  const map = {};
+  const aliveEnemySlots = eField
+    .map((idx, pos) => ({ idx, pos }))
+    .filter(({ idx }) => idx !== null && idx !== undefined && !enTeam[idx]?.fainted)
+    .map(({ pos }) => pos);
+
+  playerActions.forEach(({ fi, mv, tPos, mult }) => {
+    // For the TARGETED enemy slot
+    if (!map[tPos]) map[tPos] = [];
+    map[tPos].push({
+      slotLabel:  `P${fi + 1}`,
+      slotColor:  SLOT_COLORS[fi],
+      moveName:   mv.n,
+      moveType:   mv.t,
+      mult,
+      targeted:   true,
+    });
+
+    // For the OTHER alive enemy slot (if any) — show "not targeting here" hint
+    aliveEnemySlots.forEach(otherPos => {
+      if (otherPos === tPos) return;
+      // Compute effectiveness against the OTHER enemy too (for info)
+      const otherEnIdx = eField[otherPos];
+      const otherMember = enTeam[otherEnIdx];
+      const otherMult = otherMember
+        ? DamageEngine.effectiveness(mv.t, otherMember.poke?.types ?? [])
+        : 1;
+      if (!map[otherPos]) map[otherPos] = [];
+      map[otherPos].push({
+        slotLabel:  `P${fi + 1}`,
+        slotColor:  SLOT_COLORS[fi],
+        moveName:   mv.n,
+        moveType:   mv.t,
+        mult:       otherMult,
+        targeted:   false, // not aimed here
+      });
+    });
+  });
+
+  return map;
+}
+
 function BattleMain() {
   const myTeam       = useBattleStore(s => s.myTeam);
   const enTeam       = useBattleStore(s => s.enTeam);
@@ -45,11 +135,19 @@ function BattleMain() {
   const active       = useBattleStore(s => s.active);
   const towerActive  = useBattleStore(s => s.towerActive);
   const towerStreak  = useBattleStore(s => s.towerStreak);
-  const pendingMoves = useBattleStore(s => s.pendingMoves);
-  const pendingSwaps = useBattleStore(s => s.pendingSwaps);
-  const resetGame    = useBattleStore(s => s.resetGame);
+  const pendingMoves   = useBattleStore(s => s.pendingMoves);
+  const pendingSwaps   = useBattleStore(s => s.pendingSwaps);
+  const pendingTargets = useBattleStore(s => s.pendingTargets);
+  const weather        = useBattleStore(s => s.weather);
+  const resetGame          = useBattleStore(s => s.resetGame);
+  const gameMode           = useBattleStore(s => s.gameMode);
+  const pvpOpponentName    = useBattleStore(s => s.pvpOpponentName);
+  const pvpWaiting         = useBattleStore(s => s.pvpWaitingForOpponent);
+  const isPvP              = gameMode === 'pvp';
 
-  const { executeDualTurn, executeTowerTurn, executeTowerSwap } = useBattleEngine();
+  const battleEngine = useBattleEngine();
+  const { executeDualTurn, executeTowerTurn, executeTowerSwap } = battleEngine;
+  const { submitPvPTurn, endPvPBattle } = usePvPEngine(battleEngine);
 
   const [swapFor, setSwapFor]         = useState(null);
   const [targetFor, setTargetFor]     = useState(null);
@@ -110,6 +208,12 @@ function BattleMain() {
   const benchMembers = myTeam
     .map((m, i) => ({ ...m, teamIdx: i }))
     .filter(m => !m.fainted && !fieldSet.has(m.teamIdx) && !swapsSet.has(m.teamIdx));
+
+  // ── Attack indicators: compute what each player slot is targeting ──────────
+  const atkIndicators = computeAttackIndicators(
+    myTeam, enTeam, pField, eField,
+    pendingMoves, pendingTargets
+  );
 
   // ── 2v2 readiness ──────────────────────────────────────────────────────────
   const slotReady = (fi) => {
@@ -245,23 +349,39 @@ function BattleMain() {
           <div className={styles.side}>
             <div className={`${styles.sideLabel} ${styles.enemyLabel}`}>👾 العدو</div>
             {targetFor && <div className={styles.targetHint}>🎯 اختر الهدف</div>}
-            <FighterCard
-              member={eField[0] !== null ? enTeam[eField[0]] : null}
-              isPlayer={false} fieldPos={0}
-              isTarget={!!targetFor && eField[0] !== null && !enTeam[eField[0]]?.fainted}
-              onTarget={targetFor ? () => handleTargetChosen(0) : null}
-            />
-            {!towerActive && (
+            <div className={styles.cardWrapper}>
+              <AttackBadgesOverlay attackers={atkIndicators[0] ?? null} />
               <FighterCard
-                member={eField[1] !== null ? enTeam[eField[1]] : null}
-                isPlayer={false} fieldPos={1}
-                isTarget={!!targetFor && eField[1] !== null && !enTeam[eField[1]]?.fainted}
-                onTarget={targetFor ? () => handleTargetChosen(1) : null}
+                member={eField[0] !== null ? enTeam[eField[0]] : null}
+                isPlayer={false} fieldPos={0}
+                isTarget={!!targetFor && eField[0] !== null && !enTeam[eField[0]]?.fainted}
+                onTarget={targetFor ? () => handleTargetChosen(0) : null}
               />
+            </div>
+            {!towerActive && (
+              <div className={styles.cardWrapper}>
+                <AttackBadgesOverlay attackers={atkIndicators[1] ?? null} />
+                <FighterCard
+                  member={eField[1] !== null ? enTeam[eField[1]] : null}
+                  isPlayer={false} fieldPos={1}
+                  isTarget={!!targetFor && eField[1] !== null && !enTeam[eField[1]]?.fainted}
+                  onTarget={targetFor ? () => handleTargetChosen(1) : null}
+                />
+              </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* ── PvP status bar ── */}
+      {isPvP && (
+        <div className={styles.pvpBar}>
+          <span className={styles.pvpIcon}>🌐</span>
+          <span className={styles.pvpOpponent}>
+            {pvpWaiting ? '⌛ في انتظار حركة الخصم...' : `⚔ ${pvpOpponentName || 'خصمك'}`}
+          </span>
+        </div>
+      )}
 
       {/* ── TURN STATUS BAR ── */}
       <div className={`${styles.turnBar} ${pTurn ? styles.playerTurn : styles.enemyTurn}`}>
@@ -325,7 +445,7 @@ function BattleMain() {
           <button
             className={`${styles.endTurnBtn}${allReady ? ' ' + styles.endReady : ''}${!pTurn ? ' ' + styles.endEnemyTurn : ''}`}
             disabled={!allReady}
-            onClick={allReady ? executeDualTurn : undefined}
+            onClick={allReady ? (isPvP ? submitPvPTurn : executeDualTurn) : undefined}
           >
             {!pTurn ? '⌛ دور العدو...' : allReady ? '⚔ تنفيذ الدور!' : '⚔ اختر حركاتك أولاً'}
           </button>

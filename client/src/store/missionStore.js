@@ -135,6 +135,17 @@ export const useMissionStore = create(persist(
 
       set({ progress });
 
+      // Sync updated goal progress to server for all missions that changed
+      const token = useAuthStore.getState().token;
+      if (token) {
+        Object.keys(progress).forEach(missionId => {
+          const goalProgress = progress[missionId];
+          if (goalProgress && goalProgress.some(v => v > 0)) {
+            UserAPI.updateMissionProgress(missionId, goalProgress).catch(() => {});
+          }
+        });
+      }
+
       if (newly.length) {
         set(s => ({ completed: [...new Set([...s.completed, ...newly])] }));
         newly.forEach(id => get().grantReward(id));
@@ -158,10 +169,16 @@ export const useMissionStore = create(persist(
         detail: { missionId, reward, name: mission.name },
       }));
 
-      // Sync to server
+      // Sync mission completion + goal progress to server
       const token = useAuthStore.getState().token;
       if (token) {
-        UserAPI.saveBattleResult({ missionComplete: missionId })
+        const s = get();
+        const goalProgress = s.progress[missionId] || [];
+        // Save completion using the canonical missions endpoint
+        UserAPI.completeMission(missionId, reward.xp || 0)
+          .catch(() => {});
+        // Also sync goal progress so server knows partial state
+        UserAPI.updateMissionProgress(missionId, goalProgress)
           .catch(() => {});
       }
     },
@@ -188,11 +205,26 @@ export const useMissionStore = create(persist(
       set({ progress: initProgress(), completed: [], streaks: {}, moveStats: {}, totalWins: 0 });
     },
 
-    // restore from server data
-    syncFromServer(serverCompleted = []) {
-      set(s => ({
-        completed: [...new Set([...s.completed, ...serverCompleted])],
-      }));
+    // restore from server data — REPLACES local state with server state
+    // serverMissions: { [missionId]: { goalProgress: number[], completed: bool } }
+    syncFromServer(serverCompleted = [], serverMissions = {}) {
+      const newProgress = initProgress();
+
+      // Override progress for missions that have server data
+      Object.entries(serverMissions).forEach(([missionId, data]) => {
+        if (data?.goalProgress?.length) {
+          newProgress[missionId] = data.goalProgress;
+        }
+      });
+
+      set({
+        progress:  newProgress,
+        completed: Array.isArray(serverCompleted) ? [...serverCompleted] : [],
+        // Keep local streaks/moveStats/totalWins (they're transient battle session data)
+        streaks:   {},
+        moveStats: {},
+        totalWins: 0,
+      });
     },
   }),
   {

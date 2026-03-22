@@ -86,3 +86,24 @@
   100% { box-shadow: none; }
 }
 .btn:active:not(:disabled) { animation: btnPress .25s ease both; }
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — MoveGrid (Tower mode)
+   ═══════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  .grid    { gap: 7px; }
+  .btn     { padding: 11px 9px; border-radius: 12px; gap: 4px; }
+  .moveName { font-size: 12px; }
+  .typeTag  { font-size: 8px; padding: 2px 7px; }
+  .catIcon  { font-size: 12px; }
+  .movePwr  { font-size: 10px; }
+  .ultTag   { font-size: 9px; padding: 1px 6px; }
+  .ult      { padding: 12px 10px; }
+}
+
+@media (max-width: 480px) {
+  .btn      { padding: 9px 8px; border-radius: 11px; }
+  .moveName { font-size: 11px; }
+  .typeTag  { font-size: 7px; padding: 1px 5px; }
+}

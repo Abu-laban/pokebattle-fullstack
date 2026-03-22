@@ -2,44 +2,76 @@ const User         = require('../models/User');
 const BattleRecord = require('../models/BattleRecord');
 
 // ── POST /api/battle/result ────────────────────────────────────────────────
-// Canonical battle-result endpoint (BUG-02 FIX: single endpoint for results).
-// Creates a BattleRecord for history and updates user stats atomically.
+//
+// Accepts TWO payload shapes so both the old userController flow and the new
+// battleController flow work without breaking existing clients:
+//
+// Shape A (canonical — new flow):
+//   { mode, result:'win'|'loss'|'draw', myTeam, enemyTeam,
+//     towerStreak, damageDealt, superEffHits, turnsPlayed, xpEarned }
+//
+// Shape B (client legacy — useBattleEngine sends this):
+//   { won:bool, xpGained, superEffHits, isTower, towerStreak,
+//     pokeKills, typeKills, totalDamage }
+//
 const saveBattleResult = async (req, res) => {
   try {
-    const {
-      mode, result, myTeam, enemyTeam, towerStreak,
-      damageDealt, superEffHits, turnsPlayed, xpEarned,
-    } = req.body;
+    // ── Normalise payload to canonical shape ──────────────────────────────
+    const body = req.body;
+
+    // Detect shape by checking for 'won' boolean vs 'result' string
+    const isLegacyShape = typeof body.won === 'boolean' && body.result === undefined;
+
+    const mode        = body.mode ?? (body.isTower ? 'tower' : 'normal');
+    const result      = isLegacyShape
+      ? (body.isTower ? 'loss' : body.won ? 'win' : 'loss')   // tower endings are always a loss for the record
+      : (body.result ?? 'loss');
+    const xpEarned    = body.xpEarned    ?? body.xpGained    ?? 0;
+    const damageDealt = body.damageDealt ?? body.totalDamage  ?? 0;
+    const superEffHits = Number(body.superEffHits) || 0;
+    const turnsPlayed  = Number(body.turnsPlayed)  || 0;
+    const towerStreak  = Number(body.towerStreak)  || 0;
+
+    // Normalise team arrays — accept [{ pokeName }] or [{ pokeId, pokeName }]
+    const normaliseTeam = (arr) => {
+      if (!Array.isArray(arr)) return [];
+      return arr.map(m => ({
+        pokeId:   m?.pokeId ?? m?.poke?.id ?? 0,
+        pokeName: m?.pokeName ?? m?.poke?.name ?? m?.name ?? 'Unknown',
+      }));
+    };
+    const myTeam    = normaliseTeam(body.myTeam);
+    const enemyTeam = normaliseTeam(body.enemyTeam);
 
     // ── Save battle record ────────────────────────────────────────────────
     const record = await BattleRecord.create({
       userId:      req.user._id,
       username:    req.user.username,
       mode, result, myTeam, enemyTeam,
-      towerStreak:  towerStreak  ?? 0,
-      damageDealt:  damageDealt  ?? 0,
-      superEffHits: superEffHits ?? 0,
-      turnsPlayed:  turnsPlayed  ?? 0,
-      xpEarned:     xpEarned     ?? 0,
+      towerStreak,
+      damageDealt,
+      superEffHits,
+      turnsPlayed,
+      xpEarned,
     });
 
     // ── Update user stats ─────────────────────────────────────────────────
     const user  = await User.findById(req.user._id);
     const stats = user.stats;
 
-    if (result === 'win')       stats.wins   += 1;
-    else if (result === 'loss') stats.losses += 1;
-    else                        stats.draws  += 1;
+    if (!body.isTower) {
+      if (result === 'win')  stats.wins   += 1;
+      else if (result === 'loss') stats.losses += 1;
+      else                        stats.draws  += 1;
+    }
 
-    stats.totalDamage  += damageDealt  ?? 0;
-    stats.superEffHits += superEffHits ?? 0;
-    if ((towerStreak ?? 0) > stats.towerBest) stats.towerBest = towerStreak;
+    stats.totalDamage  += damageDealt;
+    stats.superEffHits += superEffHits;
+    if (towerStreak > stats.towerBest) stats.towerBest = towerStreak;
 
-    // BUG-01 FIX: favPoke is now derived from the winsWithPoke frequency map
-    // (most wins with a single Pokémon) rather than the lead slot of the most
-    // recent battle.
-    if (result === 'win' && myTeam?.length) {
-      // Increment win count for every team member that participated
+    // ── favPoke: most-used Pokémon by win count ──────────────────────────
+    const isWin = result === 'win' || (body.isTower && body.won);
+    if (isWin && myTeam.length) {
       if (!user.winsWithPoke) user.winsWithPoke = new Map();
       myTeam.forEach(member => {
         if (member?.pokeName) {
@@ -48,19 +80,32 @@ const saveBattleResult = async (req, res) => {
         }
       });
       user.markModified('winsWithPoke');
-
-      // Recompute favPoke from the updated map
-      let topName  = null;
-      let topCount = 0;
+      let topName = null, topCount = 0;
       user.winsWithPoke.forEach((count, name) => {
         if (count > topCount) { topCount = count; topName = name; }
       });
       if (topName) stats.favPoke = topName;
     }
 
-    // XP + level up
+    // ── Merge pokeKills / typeKills maps ─────────────────────────────────
+    if (isWin && body.pokeKills && Object.keys(body.pokeKills).length) {
+      if (!user.winsWithPoke) user.winsWithPoke = new Map();
+      Object.entries(body.pokeKills).forEach(([id, count]) => {
+        user.winsWithPoke.set(String(id), (user.winsWithPoke.get(String(id)) || 0) + count);
+      });
+      user.markModified('winsWithPoke');
+    }
+    if (isWin && body.typeKills && Object.keys(body.typeKills).length) {
+      if (!user.winsByType) user.winsByType = new Map();
+      Object.entries(body.typeKills).forEach(([type, count]) => {
+        user.winsByType.set(type, (user.winsByType.get(type) || 0) + count);
+      });
+      user.markModified('winsByType');
+    }
+
+    // ── XP + level up ────────────────────────────────────────────────────
     const oldLevel = user.level;
-    const newLevel = user.addXP(xpEarned ?? 0);
+    const newLevel = user.addXP(xpEarned);
     user.markModified('stats');
     await user.save();
 

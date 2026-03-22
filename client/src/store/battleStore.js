@@ -2,7 +2,8 @@
 // Battle State Store (Zustand)
 // ══════════════════════════════════════════
 import { create } from 'zustand';
-import { DEX } from '../data/dex.js';
+import { DEX }        from '../data/dex.js';
+import { POKE_STATS } from '../data/pokeStats.js';
 import { useProgressStore } from './progressStore.js';
 import { Weather } from '../engine/Weather.js';
 import { BattleMember } from '../engine/BattleMember.js';
@@ -12,6 +13,51 @@ function addEntry(log, counter, text, cls) {
   const entry = { text, cls: cls || '', id: counter + 1 };
   const next  = log.length >= 120 ? [...log.slice(1), entry] : [...log, entry];
   return { log: next, logCounter: counter + 1 };
+}
+
+// ── Helpers for balanced enemy team selection ─────────────────────────────
+function getBST(pokeId) {
+  const s = POKE_STATS[pokeId];
+  if (!s) return 250;
+  return Object.values(s).reduce((a, b) => a + b, 0);
+}
+
+/**
+ * Select a balanced enemy pool based on the player's average BST.
+ * At low levels the margin is tight; at high levels the full DEX opens up.
+ *   Level 1-4  → ±80  BST margin (beginner: weak mons only)
+ *   Level 5-14 → ±130 BST margin
+ *   Level 15-24→ ±180 BST margin
+ *   Level 25+  → ±250 BST margin (full roster)
+ */
+function buildEnemyPool(myTeamPlain, playerLevel = 1, excludeIds = []) {
+  const avgBST = myTeamPlain.length
+    ? myTeamPlain.reduce((s, m) => s + getBST(m.poke.id), 0) / myTeamPlain.length
+    : 250;
+
+  const margin = playerLevel >= 25 ? 250
+               : playerLevel >= 15 ? 180
+               : playerLevel >= 5  ? 130
+               : 80;
+
+  const lo = Math.max(100, avgBST - margin);
+  const hi = avgBST + margin;
+
+  const filtered = DEX.filter(p =>
+    !excludeIds.includes(p.id) &&
+    getBST(p.id) >= lo &&
+    getBST(p.id) <= hi
+  );
+
+  // Safety fallback: if pool too small, widen to ±200
+  if (filtered.length < 6) {
+    return DEX.filter(p =>
+      !excludeIds.includes(p.id) &&
+      getBST(p.id) >= Math.max(100, avgBST - 200) &&
+      getBST(p.id) <= avgBST + 200
+    );
+  }
+  return filtered;
 }
 
 export const useBattleStore = create((set, get) => ({
@@ -28,6 +74,13 @@ export const useBattleStore = create((set, get) => ({
   // ── Tower ──────────────────────────────────────────────────────────────
   towerTeam: [], towerIdx: 0, towerStreak: 0,
   towerActiveTeamIdx: 0,   // ← which towerTeam member is currently active on field
+
+  // ── PvP fields ───────────────────────────────────────────────────────────
+  pvpRoomId:            null,
+  pvpYouAre:            null,   // 'p1' | 'p2'
+  pvpSeed:              null,
+  pvpOpponentName:      null,
+  pvpWaitingForOpponent: false,
 
   // ── Pending actions ──────────────────────────────────────────────────────
   // Each slot: pendingMoves = moveIdx | null, pendingSwaps = newTeamIdx | null
@@ -65,6 +118,7 @@ export const useBattleStore = create((set, get) => ({
   setTurnTimer(v)               { set({ turnTimer: v }); },
   setTowerActiveTeamIdx(i)      { set({ towerActiveTeamIdx: i }); },
 
+  setPvpWaiting(v) { set({ pvpWaitingForOpponent: v }); },
   setPendingMove(fi, mi) {
     set(s => { const a = [...s.pendingMoves]; a[fi] = mi; return { pendingMoves: a }; });
   },
@@ -141,9 +195,10 @@ export const useBattleStore = create((set, get) => ({
       const pool = DEX.filter(x => !ids.includes(x.id));
       ids.push(pool[Math.floor(Math.random() * pool.length)].id);
     }
-    const myTeam = ids.map(id => BattleMember.fresh(DEX.find(x => x.id === id)).toPlain());
-    const ePool  = DEX.filter(x => !myTeam.find(t => t.poke.id === x.id));
-    const pool   = [...ePool];
+    const myTeam     = ids.map(id => BattleMember.fresh(DEX.find(x => x.id === id)).toPlain());
+    const playerLevel = useProgressStore.getState().level ?? 1;
+    const ePool      = buildEnemyPool(myTeam, playerLevel, ids);
+    const pool       = [...ePool];
     const enTeam = Array.from({ length: 4 }, () => {
       const pick = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
       return BattleMember.fresh(pick).toPlain();
@@ -233,7 +288,9 @@ export const useBattleStore = create((set, get) => ({
     SFX.stopBGM();
     setTimeout(() => SFX.defeat?.(), 300);
     set(s => ({
-      towerActive: false, gameMode: 'normal', active: false,
+      towerActive: false, gameMode: 'normal',
+      pvpRoomId: null, pvpYouAre: null, pvpSeed: null,
+      pvpOpponentName: null, pvpWaitingForOpponent: false, active: false,
       overlayResult: true,
       resultData: { type: 'tower', streak: s.towerStreak },
     }));
@@ -259,6 +316,8 @@ export const useBattleStore = create((set, get) => ({
       weather: new Weather().toPlain(), log: [], logCounter: 0,
       overlayResult: false, resultData: null,
       towerActive: false, gameMode: 'normal',
+      pvpRoomId: null, pvpYouAre: null, pvpSeed: null,
+      pvpOpponentName: null, pvpWaitingForOpponent: false,
       pendingMoves: [null,null], pendingTargets: [null,null], pendingSwaps: [null,null],
       turnTimer: 30,
     });
@@ -269,6 +328,7 @@ export const useBattleStore = create((set, get) => ({
 // External subscribers
 const _animListeners = new Set();
 export function subscribeBattleAnim(fn) { _animListeners.add(fn); return () => _animListeners.delete(fn); }
-export function emitBattleAnim(type, fieldPos, isEnemy) {
-  _animListeners.forEach(fn => fn({ type, fieldPos, isEnemy }));
+// extras: optional payload { damage, mult, crit, absorbed } etc.
+export function emitBattleAnim(type, fieldPos, isEnemy, extras = {}) {
+  _animListeners.forEach(fn => fn({ type, fieldPos, isEnemy, ...extras }));
 }

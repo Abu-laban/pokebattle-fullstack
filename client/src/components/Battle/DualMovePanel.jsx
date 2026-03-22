@@ -1,9 +1,10 @@
 // DualMovePanel — 2v2 move selection per pokemon slot
-// Swap is handled by parent via onSwapRequest
+// Shows type-effectiveness badge (2x / ½x / 0x) against the current pending target.
 import { useBattleStore }  from '../../store/battleStore.js';
 import { MOVE_EFFECTS }    from '../../data/moveEffects.js';
 import { MOVE_SECONDARY }  from '../../data/moveSecondary.js';
 import { SPECIAL_TYPES }   from '../../data/moves.js';
+import { DamageEngine }    from '../../engine/DamageEngine.js';
 import styles              from './DualMovePanel.module.css';
 
 const STATUS_META = {
@@ -29,27 +30,50 @@ const TYPE_COLORS = {
 
 function getMoveCategory(mv) {
   const eff = MOVE_EFFECTS[mv.n];
-  if (eff?.weather)               return { icon: '🌤', label: 'طقس: ' + (WEATHER_LABELS[eff.weather] || eff.weather), cat: 'weather' };
-  if (eff?.target === 'self')     return { icon: '🛡', label: 'داعم', cat: 'buff' };
+  if (eff?.weather)                   return { icon: '🌤', label: 'طقس: ' + (WEATHER_LABELS[eff.weather] || eff.weather), cat: 'weather' };
+  if (eff?.target === 'self')         return { icon: '🛡', label: 'داعم', cat: 'buff' };
   if (eff?.target === 'foe' && !mv.p) return { icon: '⚡', label: 'حالة', cat: 'status' };
-  if (mv.p === 0)                 return { icon: '✨', label: 'داعم', cat: 'buff' };
+  if (mv.p === 0)                     return { icon: '✨', label: 'داعم', cat: 'buff' };
   const isSpecial = SPECIAL_TYPES.has(mv.t);
   if (mv.p > 100) return { icon: isSpecial ? '💥✨' : '💥⚔', label: isSpecial ? 'خاص قوي' : 'جسدي قوي', cat: isSpecial ? 'special' : 'physical' };
   return isSpecial
-    ? { icon: '✨', label: 'خاص', cat: 'special' }
+    ? { icon: '✨', label: 'خاص',  cat: 'special'  }
     : { icon: '⚔', label: 'جسدي', cat: 'physical' };
 }
 
+/**
+ * Get effectiveness badge for a move against the current target.
+ * Returns null for neutral (1x) moves and non-damaging moves.
+ */
+function getEffBadge(mv, defenderTypes) {
+  if (!defenderTypes?.length || mv.p === 0) return null;
+  if (MOVE_EFFECTS[mv.n]) return null; // status / weather moves
+  const mult = DamageEngine.effectiveness(mv.t, defenderTypes);
+  return DamageEngine.effLabel(mult);
+}
+
 export function DualMovePanel({ fieldPos, onMoveChosen, onSwapRequest }) {
-  const myTeam       = useBattleStore(s => s.myTeam);
-  const pField       = useBattleStore(s => s.pField);
-  const pendingMoves = useBattleStore(s => s.pendingMoves);
-  const pendingSwaps = useBattleStore(s => s.pendingSwaps);
-  const pTurn        = useBattleStore(s => s.pTurn);
+  const myTeam         = useBattleStore(s => s.myTeam);
+  const enTeam         = useBattleStore(s => s.enTeam);
+  const pField         = useBattleStore(s => s.pField);
+  const eField         = useBattleStore(s => s.eField);
+  const pendingMoves   = useBattleStore(s => s.pendingMoves);
+  const pendingSwaps   = useBattleStore(s => s.pendingSwaps);
+  const pendingTargets = useBattleStore(s => s.pendingTargets);
+  const pTurn          = useBattleStore(s => s.pTurn);
   const setPendingMove = useBattleStore(s => s.setPendingMove);
 
   const idx    = pField[fieldPos];
   const member = idx !== null ? myTeam[idx] : null;
+
+  // Resolve the defender types based on currently pending target (or default slot 0)
+  const targetEFieldPos = pendingTargets[fieldPos] ?? 0;
+  const enIdx = eField[targetEFieldPos] ?? eField[0];
+  const defMember = enIdx !== null && enIdx !== undefined ? enTeam[enIdx] : null;
+  const defenderTypes = defMember && !defMember.fainted ? (defMember.poke?.types ?? []) : [];
+
+  // Name of the current target for display
+  const targetName = defMember && !defMember.fainted ? defMember.poke?.name : null;
 
   if (!member || member.fainted) {
     return (
@@ -81,7 +105,10 @@ export function DualMovePanel({ fieldPos, onMoveChosen, onSwapRequest }) {
         <span className={styles.pokeName}>{member.poke.name}</span>
         {hasPendingMove && <span className={styles.readyBadge}>✔ هجوم</span>}
         {hasPendingSwap && <span className={styles.swapBadge}>🔄 تبديل</span>}
-        {!isCommitted && <span className={styles.chooseTxt}>اختر</span>}
+        {!isCommitted && targetName && (
+          <span className={styles.targetHintSmall}>🎯 {targetName}</span>
+        )}
+        {!isCommitted && !targetName && <span className={styles.chooseTxt}>اختر</span>}
       </div>
 
       {/* Committed: show what's chosen */}
@@ -93,6 +120,9 @@ export function DualMovePanel({ fieldPos, onMoveChosen, onSwapRequest }) {
               <span className={styles.committedName}>
                 {member.poke.moves[pendingMoves[fieldPos]]?.n}
               </span>
+              {targetName && (
+                <span className={styles.committedTarget}>→ {targetName}</span>
+              )}
               <button className={styles.cancelBtn}
                 onClick={() => setPendingMove(fieldPos, null)}>✕</button>
             </div>
@@ -113,10 +143,10 @@ export function DualMovePanel({ fieldPos, onMoveChosen, onSwapRequest }) {
           {/* Move grid */}
           <div className={styles.moves}>
             {member.poke.moves.map((mv, i) => {
-              const color   = TYPE_COLORS[mv.t] || '#888';
-              const blocked = mv.u && member.ult < 100;
-              const cat     = getMoveCategory(mv);
-              const sec     = MOVE_SECONDARY[mv.n];
+              const color     = TYPE_COLORS[mv.t] || '#888';
+              const blocked   = mv.u && member.ult < 100;
+              const cat       = getMoveCategory(mv);
+              const sec       = MOVE_SECONDARY[mv.n];
               const statusMeta = sec ? STATUS_META[sec.status] : null;
               return (
                 <button key={i}
@@ -126,11 +156,15 @@ export function DualMovePanel({ fieldPos, onMoveChosen, onSwapRequest }) {
                   onClick={() => handleMove(i)}
                 >
                   {mv.u && <span className={styles.ultTag}>✦ ULT</span>}
+
                   <div className={styles.mvTop}>
                     <span className={styles.mvCatIcon}>{cat.icon}</span>
                     <span className={styles.mvType} style={{ background: color }}>{mv.t}</span>
+
                   </div>
+
                   <span className={styles.mvName}>{mv.n}</span>
+
                   <div className={styles.mvBottom}>
                     <span className={styles.mvPwr}>
                       {mv.p > 0 ? `قوة ${mv.p}` : cat.label}
@@ -145,6 +179,7 @@ export function DualMovePanel({ fieldPos, onMoveChosen, onSwapRequest }) {
                       </span>
                     )}
                   </div>
+
                   {mv.u && (
                     <div className={styles.ultProg}>
                       <div style={{ width: member.ult + '%', height: '100%',

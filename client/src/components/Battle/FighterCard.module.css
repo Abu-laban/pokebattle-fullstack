@@ -20,7 +20,7 @@
   border: 1.5px solid rgba(255,255,255,.08);
   backdrop-filter: blur(18px);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   min-width: 0;
   animation: cardIn .3s ease both;
   transition: border-color .25s, box-shadow .25s;
@@ -300,3 +300,231 @@
 .sprHit    { animation: shakeHit .5s ease both; }
 .sprSuperEff { animation: superEffFlash .5s ease both; }
 .sprHeal   { animation: healPulse .6s ease both; }
+/* ══════════════════════════════════════
+   FLOATING DAMAGE NUMBERS
+══════════════════════════════════════ */
+@keyframes floatDmg {
+  0%   { opacity: 1;   transform: translateY(0)    scale(1); }
+  20%  { opacity: 1;   transform: translateY(-10px) scale(1.18); }
+  70%  { opacity: .85; transform: translateY(-34px) scale(1.06); }
+  100% { opacity: 0;   transform: translateY(-52px) scale(.9); }
+}
+@keyframes floatCrit {
+  0%   { opacity: 1;   transform: translateY(0)    scale(1.3); }
+  15%  { opacity: 1;   transform: translateY(-6px)  scale(1.55); }
+  60%  { opacity: .9;  transform: translateY(-40px) scale(1.25); }
+  100% { opacity: 0;   transform: translateY(-60px) scale(1.0); }
+}
+@keyframes floatHeal {
+  0%   { opacity: 1;   transform: translateY(0)    scale(1); }
+  100% { opacity: 0;   transform: translateY(-48px) scale(.95); }
+}
+
+.dmgFloat {
+  position: absolute;
+  top: 34%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 17px;
+  font-weight: 900;
+  text-shadow: 0 2px 8px rgba(0,0,0,.85), 0 0 16px currentColor;
+  pointer-events: none;
+  z-index: 30;
+  white-space: nowrap;
+  animation: floatDmg 1.05s cubic-bezier(.22,1,.36,1) forwards;
+  letter-spacing: 1px;
+}
+.dmgFloat.crit {
+  animation: floatCrit 1.1s cubic-bezier(.22,1,.36,1) forwards;
+  font-size: 22px;
+}
+.dmgFloat.heal {
+  color: #69F0AE;
+  animation: floatHeal 1.0s ease forwards;
+  font-size: 15px;
+}
+
+/* ══════════════════════════════════════
+   ATTACK INDICATOR BADGES
+   Rendered OUTSIDE the card in a wrapper
+   div so overflow:hidden never clips them.
+══════════════════════════════════════ */
+@keyframes atkBadgeIn {
+  from { opacity: 0; transform: translateY(-4px) scale(.9); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+/* The outer wrapper is positioned relative in BattleScreen */
+.badgesOverlay {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+  padding: 0 4px 4px;
+  pointer-events: none;
+  width: 100%;
+}
+
+.attackBadge {
+  background: linear-gradient(135deg, rgba(8,15,32,.97), rgba(4,10,22,.97));
+  border: 1.5px solid rgba(255,255,255,.2);
+  border-radius: 10px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  box-sizing: border-box;
+  animation: atkBadgeIn .2s ease both;
+  box-shadow: 0 3px 14px rgba(0,0,0,.7);
+}
+.attackBadgeDot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.attackBadgeSlot {
+  font-size: 9px;
+  font-family: 'Cairo', sans-serif;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.attackBadgeMove {
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  font-family: 'Cairo', sans-serif;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.attackBadgeType {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  font-weight: 700;
+  font-family: 'Cairo', sans-serif;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.attackBadgeEff {
+  font-size: 10px;
+  font-weight: 900;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — FighterCard
+   ═══════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  .card { padding: 8px 8px 7px; border-radius: 14px; }
+
+  /* Smaller sprite */
+  .spriteWrap { width: 60px; height: 60px; flex-shrink: 0; }
+  .sprite     { width: 60px; height: 60px; }
+
+  /* Info text */
+  .name     { font-size: 11px; }
+  .hpRow    { gap: 3px; }
+  .hpPct    { font-size: 8px; }
+
+  /* ULT bar */
+  .ultLabel { font-size: 7px; }
+  .ultVal   { font-size: 7px; }
+
+  /* Ability row: hide on very small cards */
+  .abilityRow { display: none; }
+
+  /* Status badges: smaller */
+  .statusBadge { font-size: 9px; padding: 1px 4px; border-radius: 4px; }
+  .stageBadge  { font-size: 8px; padding: 1px 4px; }
+
+  /* Swap button */
+  .swapBtn, .cancelSwapBtn { width: 24px; height: 24px; font-size: 11px; border-radius: 7px; }
+
+  /* Floating damage numbers */
+  .dmgFloat      { font-size: 14px; }
+  .dmgFloat.crit { font-size: 18px; }
+
+  /* Attack badges overlay */
+  .attackBadge     { padding: 3px 6px; border-radius: 8px; }
+  .attackBadgeMove { font-size: 9px; max-width: 60px; }
+  .attackBadgeType { font-size: 8px; padding: 1px 4px; }
+  .attackBadgeEff  { font-size: 9px; }
+  .attackBadgeDot  { width: 6px; height: 6px; }
+}
+
+@media (max-width: 480px) {
+  .card   { padding: 6px 6px 5px; border-radius: 12px; gap: 5px; }
+  .sprite { width: 50px; height: 50px; }
+  .spriteWrap { width: 50px; height: 50px; }
+  .name   { font-size: 10px; }
+
+  /* On very small screens, hide stages too */
+  .badges { display: none; }
+}
+
+/* ── Attack badge variants ─────────────────────────────────────── */
+
+/* Targeted badge already defined above (.attackBadge) */
+
+/* Neutral effectiveness label */
+.attackBadgeEffNeutral {
+  font-size: 9px;
+  font-family: 'Cairo', sans-serif;
+  color: rgba(255,255,255,.35);
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 1px 5px;
+}
+
+/* "Away" badge — player is attacking the OTHER enemy slot */
+.attackBadgeAway {
+  background: rgba(6,10,22,.7);
+  border: 1px dashed rgba(255,255,255,.12);
+  border-radius: 9px;
+  padding: 3px 7px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
+  animation: atkBadgeIn .2s ease both;
+  opacity: .65;
+}
+
+.attackBadgeMoveAway {
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(255,255,255,.45);
+  font-family: 'Cairo', sans-serif;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  text-decoration: line-through;
+  text-decoration-color: rgba(255,255,255,.25);
+}
+
+.attackBadgeWouldBe {
+  font-size: 8px;
+  font-weight: 700;
+  font-family: 'Cairo', sans-serif;
+  flex-shrink: 0;
+  white-space: nowrap;
+  opacity: .75;
+}
+
+.attackBadgeNotHere {
+  font-size: 8px;
+  color: rgba(255,255,255,.3);
+  font-family: 'Cairo', sans-serif;
+  flex-shrink: 0;
+  white-space: nowrap;
+}

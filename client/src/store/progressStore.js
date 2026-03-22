@@ -159,6 +159,37 @@ export const useProgressStore = create(
         });
       },
 
+      // ── Soft reset: wipe battle stats + XP/level, keep unlocks & missions ──
+      // This mirrors what POST /api/user/reset-stats does on the server.
+      softReset() {
+        const s = get();
+        set({
+          level:        1,
+          xp:           0,
+          wins:         0,
+          losses:       0,
+          totalDmg:     0,
+          superEffHits: 0,
+          totalXp:      0,
+          towerBest:    0,
+          towerCurrent: 0,
+          // PRESERVED: winsWithPoke, winsByType, winsWithTeam, pokeXp,
+          //            unlockedPokes, unlockedAchievements, megaEventActive
+        });
+        // Persist the kept data under this user's key
+        if (s._userId) {
+          try {
+            localStorage.setItem(`pb-local-${s._userId}`, JSON.stringify({
+              winsWithPoke:  s.winsWithPoke,
+              winsByType:    s.winsByType,
+              winsWithTeam:  s.winsWithTeam,
+              pokeXp:        s.pokeXp,
+              unlockedPokes: s.unlockedPokes,
+            }));
+          } catch {}
+        }
+      },
+
       // ── Sync from server user object ──────────────────────────────────────
       syncFromServer(serverUser) {
         if (!serverUser) return;
@@ -289,6 +320,23 @@ export const useProgressStore = create(
           lvl++;
         }
         return lvl;
+      },
+
+      // total XP accumulated for this poke
+      pokeRawXp(id) {
+        return get().pokeXp[id] || 0;
+      },
+
+      // XP progress within current level: { current, needed, pct }
+      pokeXpProgress(id) {
+        let xp  = get().pokeXp[id] || 0;
+        let lvl = 1;
+        while (xp >= xpForLevel(lvl)) {
+          xp -= xpForLevel(lvl);
+          lvl++;
+        }
+        const needed = xpForLevel(lvl);
+        return { current: xp, needed, pct: Math.min(100, Math.round((xp / needed) * 100)), level: lvl };
       },
 
       // record a win using a particular team composition

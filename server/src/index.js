@@ -1,5 +1,8 @@
 require('dotenv').config();
 const express      = require('express');
+const { createServer } = require('http');
+const { Server }       = require('socket.io');
+const { setupMatchmaking } = require('./socket/matchmaking');
 const cors         = require('cors');
 const helmet       = require('helmet');
 const morgan       = require('morgan');
@@ -69,4 +72,28 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: err.message || 'Server Error' });
 });
 
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+const httpServer = createServer(app);
+
+const io = new Server(httpServer, {
+  cors: {
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      const allowed = [
+        process.env.CLIENT_URL,
+        'http://localhost:3000',
+        'http://localhost:5173',
+      ].filter(Boolean);
+      const ok = allowed.includes(origin)
+        || /\.vercel\.app$/.test(origin)
+        || /\.app\.github\.dev$/.test(origin)
+        || /\.up\.railway\.app$/.test(origin);
+      cb(ok ? null : new Error('CORS'), ok);
+    },
+    credentials: true,
+  },
+  transports: ['websocket', 'polling'],
+});
+
+setupMatchmaking(io);
+
+httpServer.listen(PORT, () => console.log(`🚀 Server running on port ${PORT} (WS enabled)`));

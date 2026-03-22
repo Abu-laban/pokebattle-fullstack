@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════
-// PokeHoverCard — Shared popup card (Selection + Tower)
+// PokeHoverCard — Pokémon detail popup with XP/level tracker
 // ══════════════════════════════════════════
 import { createPortal }       from 'react-dom';
 import { useProgressStore }   from '../../store/progressStore.js';
@@ -42,6 +42,13 @@ function getTypeMatchups(types) {
   return { weak, resist };
 }
 
+// XP bar colour: green → yellow → red as level climbs
+function xpBarColor(level) {
+  if (level >= 15) return '#FF6B35';
+  if (level >= 8)  return '#FFD600';
+  return '#66BB6A';
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 export function PokeHoverCard({ poke }) {
   const stats    = POKE_STATS[poke.id];
@@ -50,13 +57,19 @@ export function PokeHoverCard({ poke }) {
 
   const bst          = (stats ? Object.values(stats).reduce((a,b) => a+b, 0) : 0) + poke.hp;
   const winsWithPoke = progress.winsWithPoke[poke.id] || 0;
-  const pokeLevel    = progress.pokeLevel(poke.id);
+
+  // ── Pokémon level + XP ──────────────────────────────────────────────────────
+  const xpData     = progress.pokeXpProgress(poke.id);
+  const pokeLevel  = xpData.level;
+  const xpCurrent  = xpData.current;
+  const xpNeeded   = xpData.needed;
+  const xpPct      = xpData.pct;
+  const totalXp    = progress.pokeRawXp(poke.id);
 
   const color1 = TYPE_BG[poke.types[0]] || '#4FC3F7';
   const color2 = poke.types[1] ? (TYPE_BG[poke.types[1]] || color1) : color1;
   const isDual = poke.types.length > 1 && color1 !== color2;
 
-  // Card border — gradient for dual types
   const cardStyle = isDual ? {
     '--accent': color1,
     border: '2px solid transparent',
@@ -70,7 +83,6 @@ export function PokeHoverCard({ poke }) {
     background: '#0f1520',
   };
 
-  // Header bg — gradient blending both type colors
   const headerBg = isDual
     ? `linear-gradient(135deg, ${color1}35 0%, ${color2}35 100%)`
     : `color-mix(in srgb, ${color1} 12%, #0f1520)`;
@@ -100,11 +112,42 @@ export function PokeHoverCard({ poke }) {
               {poke.types.map(t => <TypeBadge key={t} type={t} size="sm" />)}
             </div>
             <div className={styles.meta}>
-              <span>Lv.{pokeLevel}</span>
-              <span>🏆 {winsWithPoke}</span>
-              <span style={{ color: color1 }}>BST {bst}</span>
+              <span style={{ color: color1, fontWeight: 900 }}>Lv.{pokeLevel}</span>
+              <span>🏆 {winsWithPoke} انتصار</span>
+              <span style={{ color: 'rgba(255,255,255,.45)' }}>BST {bst}</span>
             </div>
           </div>
+        </div>
+
+        {/* ── Pokémon XP Bar ── */}
+        <div className={styles.xpSection}>
+          <div className={styles.xpHeader}>
+            <span className={styles.xpLabel}>
+              <span className={styles.xpIcon}>⭐</span>
+              مستوى البوكيمون
+            </span>
+            <span className={styles.xpLevelBadge} style={{ background: color1 + '22', color: color1, border: `1px solid ${color1}44` }}>
+              Lv.{pokeLevel}
+            </span>
+          </div>
+          <div className={styles.xpBarTrack}>
+            <div
+              className={styles.xpBarFill}
+              style={{
+                width: `${xpPct}%`,
+                background: `linear-gradient(90deg, ${xpBarColor(pokeLevel)}, ${color1})`,
+              }}
+            />
+          </div>
+          <div className={styles.xpNumbers}>
+            <span className={styles.xpCurrent}>{xpCurrent} / {xpNeeded} XP</span>
+            <span className={styles.xpTotal}>إجمالي: {totalXp} XP</span>
+          </div>
+          {winsWithPoke > 0 && (
+            <div className={styles.xpHint}>
+              💡 تكسب XP إضافي كلما انتصرت مع هذا البوكيمون
+            </div>
+          )}
         </div>
 
         {/* ── Stat bars ── */}

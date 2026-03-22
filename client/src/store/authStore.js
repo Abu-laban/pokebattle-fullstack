@@ -9,11 +9,27 @@ import { useProgressStore }  from './progressStore.js';
 
 function resetProgress() {
   localStorage.removeItem('pokebattle-progress');
+  localStorage.removeItem('pokebattle-missions');
 }
 
-function syncProgress(user) {
+async function syncProgress(user) {
   if (!user) return;
   useProgressStore.getState().syncFromServer(user);
+
+  // Fetch mission progress from server and sync to missionStore
+  try {
+    const { UserAPI } = await import('../services/api.js');
+    const { useMissionStore } = await import('./missionStore.js');
+    const missionData = await UserAPI.getMissions?.();
+    if (missionData?.missions) {
+      const completed = Object.entries(missionData.missions)
+        .filter(([, v]) => v?.completed)
+        .map(([id]) => id);
+      useMissionStore.getState().syncFromServer(completed, missionData.missions);
+    }
+  } catch {
+    // If server is unavailable, keep cleared state — don't re-load stale local data
+  }
 }
 
 export const useAuthStore = create((set, get) => ({
@@ -50,7 +66,11 @@ export const useAuthStore = create((set, get) => ({
       if (!token) throw new Error('Missing access token');
       
       sessionStorage.setItem('pb_token', token);
+      // Clear ALL local state before loading fresh user data
       resetProgress();
+      useProgressStore.getState().resetAll?.();
+      const { useMissionStore } = await import('./missionStore.js');
+      useMissionStore.getState().resetAll?.();
       
       const freshUser = (await UserAPI.getProfile()).user;
       set({ token, user: freshUser, loading: false });
@@ -78,6 +98,11 @@ export const useAuthStore = create((set, get) => ({
   loginWithToken: async (token, userData) => {
     sessionStorage.setItem('pb_token', token);
     resetProgress();
+    useProgressStore.getState().resetAll?.();
+    try {
+      const { useMissionStore } = await import('./missionStore.js');
+      useMissionStore.getState().resetAll?.();
+    } catch {}
     set({ token, user: userData, loading: false, error: null });
     try {
       const res = await UserAPI.getProfile();

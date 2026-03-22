@@ -76,7 +76,7 @@
 /* ══════════════ ARENA ══════════════ */
 .arena {
   border-radius: 20px;
-  overflow: hidden;
+  overflow: visible;
   position: relative;
   background: linear-gradient(180deg, #0b1a35 0%, #060e1d 55%, #040b17 100%);
   border: 1.5px solid rgba(255,255,255,.08);
@@ -105,6 +105,13 @@
   gap: 10px;
 }
 .side { display: flex; flex-direction: column; gap: 7px; flex: 1; min-width: 0; }
+/* Wrapper for enemy cards — holds badge overlay + card without clipping */
+.cardWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+}
 .sideLabel {
   font-family: 'Cairo', sans-serif;
   font-size: 11px; font-weight: 700;
@@ -390,4 +397,98 @@
   border-radius: inherit;
   pointer-events: none;
   animation: arenaFlash .5s ease both;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — BattleScreen
+   640px = large phone  |  480px = small phone
+   ═══════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+
+  /* ── Arena & fighters ── */
+  .fighters {
+    padding: 8px 8px 10px;
+    gap: 6px;
+  }
+  .vs {
+    font-size: 8px;
+    padding: 0 2px;
+    color: rgba(255,255,255,.08);
+  }
+  .sideLabel { font-size: 9px; letter-spacing: 0; }
+
+  /* ── Timer ── */
+  .timerWrap  { padding: 6px 10px; gap: 7px; }
+  .timerNum   { font-size: 10px; min-width: 20px; }
+  .timerLabel { font-size: 12px; }
+
+  /* ── Turn bar ── */
+  .turnBar  { padding: 8px 12px; }
+  .turnText { font-size: 12px; }
+
+  /* ── Tower bar ── */
+  .towerBar   { padding: 7px 12px; }
+  .towerTitle { font-size: 12px; }
+  .streak     { font-size: 11px; }
+  .teamDot    { width: 8px; height: 8px; }
+
+  /* ── 2v2 dual panels: stack on small phones ── */
+  .dualPanels { grid-template-columns: 1fr; gap: 7px; }
+
+  /* ── End-turn button ── */
+  .endTurnBtn { padding: 12px 14px; font-size: 13px; border-radius: 13px; }
+
+  /* ── Bottom row: log on top, retreat below ── */
+  .bottomRow    { flex-direction: column; gap: 7px; }
+  .retreatBtn   {
+    flex-direction: row; gap: 8px;
+    padding: 10px 16px; min-width: unset; width: 100%;
+    justify-content: center;
+  }
+  .retreatIcon  { font-size: 15px; }
+  .retreatTxt   { font-size: 12px; }
+
+  /* ── Swap panel ── */
+  .swapPanel { padding: 12px 10px; border-radius: 14px; }
+  .benchCard { min-width: 72px; flex: 1 1 72px; padding: 8px 8px 6px; }
+  .benchImg  { width: 44px; height: 44px; }
+  .benchName { font-size: 10px; }
+
+  /* ── Tower moves ── */
+  .towerMoves { padding: 10px; border-radius: 14px; }
+  .movesHead  { font-size: 11px; }
+}
+
+@media (max-width: 480px) {
+  /* Tighter fighter spacing */
+  .fighters { padding: 6px 6px 8px; gap: 4px; }
+
+  /* Show VS only as a thin divider */
+  .vs { display: none; }
+
+  /* Make each side take equal width */
+  .side { flex: 1; }
+}
+
+/* ═══════════════════════════════
+   PvP STATUS BAR
+═══════════════════════════════ */
+.pvpBar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, rgba(124,77,255,.12), rgba(79,195,247,.08));
+  border: 1.5px solid rgba(124,77,255,.3);
+  border-radius: 12px;
+  padding: 8px 16px;
+  animation: dotBlink 2s ease infinite;
+}
+.pvpIcon { font-size: 14px; }
+.pvpOpponent {
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #B39DDB;
 }

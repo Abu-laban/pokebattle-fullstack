@@ -166,3 +166,22 @@ body.weather-hail #root::before { filter:hue-rotate(180deg) brightness(.9); }
   backdrop-filter: blur(18px);
   box-shadow: var(--shadow-card);
 }
+
+/* ══════════════════════════════════════════════════════
+   GLOBAL RESPONSIVE — Mobile-first adjustments
+   Breakpoints: 480px (small phone), 640px (large phone)
+   ══════════════════════════════════════════════════════ */
+
+/* Tighter app wrapper on small screens */
+@media (max-width: 640px) {
+  .app-wrap {
+    padding: 6px 8px 20px;
+    max-width: 100%;
+  }
+}
+
+/* Shrink Press Start 2P font globally on tiny screens */
+@media (max-width: 380px) {
+  .pixel { font-size: 9px !important; }
+  .app-wrap { padding: 4px 6px 16px; }
+}

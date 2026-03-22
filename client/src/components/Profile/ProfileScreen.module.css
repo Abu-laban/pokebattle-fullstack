@@ -108,3 +108,537 @@
   cursor: pointer; transition: all .22s;
 }
 .logoutBtn:hover { background: rgba(239,83,80,.2); border-color: rgba(239,83,80,.45); }
+/* ═══════════════════════════════════════════
+   RESPONSIVE — ProfileScreen
+   ═══════════════════════════════════════════ */
+
+@media (max-width: 480px) {
+  .card    { padding: 22px 16px 18px; border-radius: 20px; }
+
+  /* Hero */
+  .hero    { gap: 12px; margin-bottom: 16px; }
+  .avatar  { width: 62px; height: 62px; }
+  .avatarLetter { font-size: 26px; }
+  .username { font-size: 17px; }
+
+  /* Stats: 2-column instead of 4 */
+  .statsGrid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .statNum   { font-size: 17px; }
+  .statName  { font-size: 10px; }
+
+  /* XP */
+  .xpVal, .xpLabel { font-size: 12px; }
+}
+
+/* ══════════════════════════════════════════
+   XP SECTION ENHANCEMENTS
+══════════════════════════════════════════ */
+
+.xpFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2px;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.xpNextRank {
+  font-family: 'Cairo', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Hoverable level label */
+.xpLevelWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  padding: 3px 8px 3px 4px;
+  border-radius: 8px;
+  transition: background .2s;
+  user-select: none;
+}
+.xpLevelWrap:hover {
+  background: rgba(255,255,255,.07);
+}
+.xpHoverHint {
+  font-size: 13px;
+  opacity: .55;
+  transition: opacity .2s;
+}
+.xpLevelWrap:hover .xpHoverHint { opacity: 1; }
+
+/* ══════════════════════════════════════════
+   LEVEL ROADMAP TOOLTIP
+══════════════════════════════════════════ */
+@keyframes roadmapIn {
+  from { opacity: 0; transform: translateY(-8px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+.roadmapTooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 500;
+  width: 290px;
+  background: linear-gradient(160deg, #0d1525 0%, #080e1a 100%);
+  border: 1.5px solid rgba(255,255,255,.12);
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow: 0 16px 48px rgba(0,0,0,.75), 0 0 0 1px rgba(255,255,255,.04);
+  animation: roadmapIn .22s cubic-bezier(.34,1.56,.64,1) both;
+}
+
+.roadmapTitle {
+  font-family: 'Cairo', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(255,255,255,.5);
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.roadmapList {
+  display: flex;
+  flex-direction: column;
+}
+
+.roadmapRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+/* Left column: dot + connecting line */
+.roadmapLeft {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 28px;
+}
+.roadmapDot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 900;
+  color: #fff;
+  font-family: 'Press Start 2P', monospace;
+  flex-shrink: 0;
+  transition: all .25s;
+}
+.roadmapLine {
+  width: 2px;
+  height: 22px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  margin: 2px 0;
+}
+
+/* Right column: text info */
+.roadmapInfo {
+  flex: 1;
+  padding: 4px 0 14px;
+  min-width: 0;
+}
+.roadmapRow:last-child .roadmapInfo { padding-bottom: 2px; }
+
+.roadmapRank {
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+.currentBadge {
+  font-size: 9px;
+  background: rgba(255,255,255,.12);
+  color: rgba(255,255,255,.6);
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-weight: 700;
+  font-family: 'Cairo', sans-serif;
+}
+.roadmapUnlock {
+  font-family: 'Cairo', sans-serif;
+  font-size: 10px;
+  line-height: 1.4;
+}
+.roadmapXpLeft {
+  font-family: 'Cairo', sans-serif;
+  font-size: 10px;
+  color: rgba(255,255,255,.35);
+  margin-top: 2px;
+  font-weight: 700;
+}
+
+/* State classes */
+.reached .roadmapRank { opacity: 1; }
+.locked  .roadmapRank { opacity: .45; }
+.current .roadmapInfo { padding-bottom: 14px; }
+
+/* ══════════════════════════════════════════
+   XP ROW — level trigger + roadmap tooltip
+══════════════════════════════════════════ */
+
+@keyframes roadmapIn {
+  from { opacity: 0; transform: translateY(-8px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* The clickable "المستوى X 🗺️" wrapper */
+.xpLevelWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  padding: 2px 8px 2px 4px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.07);
+  transition: background .2s, border-color .2s;
+  user-select: none;
+}
+.xpLevelWrap:hover,
+.xpLevelWrap:focus-visible {
+  background: rgba(79,195,247,.07);
+  border-color: rgba(79,195,247,.25);
+}
+
+.xpHoverHint {
+  font-size: 13px;
+  opacity: .55;
+  transition: opacity .2s, transform .2s;
+}
+.xpLevelWrap:hover .xpHoverHint {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+/* XP footer row */
+.xpFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.xpNextRank {
+  font-family: 'Cairo', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* ══════════════════════════════════════════
+   LEVEL ROADMAP TOOLTIP
+══════════════════════════════════════════ */
+.roadmapTooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 310px;
+  background: linear-gradient(160deg, #0d1525 0%, #080e1c 100%);
+  border: 1.5px solid rgba(79,195,247,.25);
+  border-radius: 18px;
+  padding: 14px 14px 10px;
+  z-index: 500;
+  box-shadow: 0 16px 48px rgba(0,0,0,.75), 0 0 0 1px rgba(255,255,255,.04);
+  animation: roadmapIn .22s cubic-bezier(.34,1.4,.64,1) both;
+  max-height: 70vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(79,195,247,.25) transparent;
+}
+.roadmapTooltip::-webkit-scrollbar { width: 4px; }
+.roadmapTooltip::-webkit-scrollbar-thumb { background: rgba(79,195,247,.2); border-radius: 4px; }
+
+.roadmapTitle {
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  font-weight: 900;
+  color: #4FC3F7;
+  margin-bottom: 12px;
+  text-align: center;
+  letter-spacing: .3px;
+}
+
+.roadmapList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Single milestone row ── */
+.roadmapRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 0;
+}
+.roadmapRow.reached { opacity: 1; }
+.roadmapRow.locked  { opacity: .55; }
+.roadmapRow.current { opacity: 1; }
+
+/* Left column: dot + vertical line */
+.roadmapLeft {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 28px;
+}
+
+.roadmapDot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cairo', sans-serif;
+  font-size: 10px;
+  font-weight: 900;
+  color: #fff;
+  flex-shrink: 0;
+  transition: box-shadow .2s;
+}
+
+.roadmapLine {
+  width: 2px;
+  height: 20px;
+  border-radius: 2px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+/* Right column: text info */
+.roadmapInfo {
+  flex: 1;
+  min-width: 0;
+  padding-top: 4px;
+}
+
+.roadmapRank {
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.currentBadge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: rgba(79,195,247,.18);
+  color: #4FC3F7;
+  border: 1px solid rgba(79,195,247,.3);
+}
+
+.roadmapUnlock {
+  font-family: 'Cairo', sans-serif;
+  font-size: 11px;
+  margin-bottom: 2px;
+  line-height: 1.4;
+}
+
+.roadmapXpLeft {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: rgba(255,214,0,.75);
+  margin-top: 2px;
+}
+
+/* ── Hero levelBadge: make it look interactive ── */
+.levelBadge {
+  cursor: pointer;
+  transition: transform .18s, box-shadow .18s;
+}
+.levelBadge:hover {
+  transform: translateX(-50%) scale(1.12);
+  box-shadow: 0 4px 16px rgba(79,195,247,.55);
+}
+
+/* ══════════════════════════════════════════
+   ROADMAP TOGGLE BUTTON + INLINE PANEL
+   (replaces the overflowing tooltip)
+══════════════════════════════════════════ */
+
+.roadmapToggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  margin-bottom: 0;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 12px;
+  color: rgba(255,255,255,.55);
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+}
+.roadmapToggle:hover {
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.85);
+  border-color: rgba(255,255,255,.18);
+}
+.roadmapArrow {
+  font-size: 16px;
+  transition: transform .25s;
+  display: inline-block;
+}
+.roadmapArrowUp { transform: rotate(180deg); }
+
+/* Inline expandable panel */
+@keyframes panelExpand {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+.roadmapPanel {
+  animation: panelExpand .22s ease both;
+  margin-bottom: 4px;
+}
+
+/* Inner content (no absolute positioning) */
+.roadmapInner {
+  background: rgba(6,11,24,.6);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-top: 6px;
+}
+
+/* ══════════════════════════════════════════
+   RESET STATS BUTTON + CONFIRM DIALOG
+══════════════════════════════════════════ */
+
+.resetBtn {
+  width: 100%;
+  padding: 11px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  background: rgba(255,152,0,.08);
+  border: 1.5px solid rgba(255,152,0,.25);
+  color: rgba(255,152,0,.8);
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .22s;
+}
+.resetBtn:hover {
+  background: rgba(255,152,0,.16);
+  border-color: rgba(255,152,0,.5);
+  color: #FF9800;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(255,152,0,.15);
+}
+
+/* Confirm overlay — sits inside the card */
+@keyframes confirmIn {
+  from { opacity: 0; transform: scale(.92) translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+.confirmOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  background: rgba(5,10,22,.88);
+  backdrop-filter: blur(10px);
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.confirmDialog {
+  background: linear-gradient(160deg, #0f1828 0%, #090e1a 100%);
+  border: 1.5px solid rgba(255,152,0,.3);
+  border-radius: 20px;
+  padding: 24px 22px 20px;
+  width: 100%;
+  max-width: 320px;
+  text-align: center;
+  animation: confirmIn .28s cubic-bezier(.34,1.56,.64,1) both;
+  box-shadow: 0 16px 48px rgba(0,0,0,.6), 0 0 40px rgba(255,152,0,.06);
+}
+.confirmIcon  { font-size: 36px; margin-bottom: 10px; }
+.confirmTitle {
+  font-family: 'Cairo', sans-serif;
+  font-size: 17px; font-weight: 900; color: #fff;
+  margin-bottom: 8px;
+}
+.confirmDesc {
+  font-family: 'Cairo', sans-serif;
+  font-size: 12px; color: rgba(255,255,255,.5);
+  margin-bottom: 6px;
+}
+.confirmList {
+  list-style: none;
+  padding: 0; margin: 0 0 10px;
+  text-align: right;
+}
+.confirmList li {
+  font-family: 'Cairo', sans-serif;
+  font-size: 12px; color: #EF9A9A;
+  padding: 3px 0;
+}
+.confirmList li::before { content: '✕ '; }
+
+.confirmKeep {
+  font-family: 'Cairo', sans-serif;
+  font-size: 11px; color: #81C784;
+  background: rgba(102,187,106,.08);
+  border: 1px solid rgba(102,187,106,.2);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 16px;
+  line-height: 1.5;
+  text-align: right;
+}
+.confirmBtns { display: flex; flex-direction: column; gap: 8px; }
+.confirmYes {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255,152,0,.14);
+  border: 1.5px solid rgba(255,152,0,.4);
+  color: #FF9800;
+  font-family: 'Cairo', sans-serif;
+  font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all .2s;
+}
+.confirmYes:hover:not(:disabled) {
+  background: rgba(255,152,0,.26);
+  border-color: rgba(255,152,0,.7);
+  transform: translateY(-1px);
+}
+.confirmYes:disabled { opacity: .5; cursor: not-allowed; }
+.confirmNo {
+  padding: 11px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,.1);
+  color: rgba(255,255,255,.4);
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px; cursor: pointer; transition: all .2s;
+}
+.confirmNo:hover { border-color: rgba(255,255,255,.25); color: rgba(255,255,255,.65); }
